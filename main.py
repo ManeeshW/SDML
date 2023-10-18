@@ -7,17 +7,15 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 import subprocess
 import torch
-#from Co.Tracker import mode
-#from Tick import *
+from config import *
 
 
-ImgDir = os.getcwd() + '/' 
 
-Test_no = 43
 img_No = 1
-Input_ImgDir = ImgDir + "input_data/Test_{}/".format(Test_no)
+#Input_ImgDir = ImgDir + "input_data/Test_{}/".format(Test_no)
 images = os.listdir(Input_ImgDir)
 No_imgs_in_folder = len(images)
+print("No. Images : ",No_imgs_in_folder)
 curr_img_no = 0
 Pc = np.array([])
 arry = []
@@ -25,30 +23,7 @@ catID = 1
 
 Hws = np.zeros((No_imgs_in_folder,12))
 Hcs = np.zeros((No_imgs_in_folder,12))
-#camera 
-K = np.loadtxt(ImgDir+"input_data/CameraProp/Blender_camera/K.txt")
-# Hc = np.array([[ 9.43276367e-01,  3.31965180e-01,  5.36798032e-03, -1.65780701e+00],
-#                [ 2.24966041e-02, -8.00382461e-02,  9.96537898e-01, -3.96238258e-01],
-#                [ 3.31245526e-01, -9.39889886e-01, -8.29662752e-02, -7.10493833e+00]])
 
-# Make output dir Folders
-try:
-   out_img = ImgDir+"output_data/imgs/Test_{}".format(Test_no)
-   os.mkdir(out_img)
-except:
-   pass
-
-try:
-   out_label = ImgDir+"output_data/output_labels/Test_{}".format(Test_no)
-   os.mkdir(out_label)
-except:
-   pass
-
-try:
-   out_label = ImgDir+"output_data/output_labels/Test_{}/Annotations".format(Test_no)
-   os.mkdir(out_label)
-except:
-   pass
 
 
 # Lists to store the bounding box coordinates
@@ -163,7 +138,7 @@ def Next(*args):
        img_No = img_no
     else:
        img_No = No_imgs_in_folder
-    image = cv2.imread(ImgDir + "input_data/Test_{}/{}.png".format(Test_no, img_No))
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
     Pc = np.array([])
     arry = []
@@ -176,7 +151,7 @@ def Next(*args):
 
 def Refresh(*args):
     global img_No, image, scaledImg, Pc, arry
-    image = cv2.imread(ImgDir + "input_data/Test_{}/{}.png".format(Test_no, img_No))
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
     Pc = np.array([])
     arry = []
@@ -189,7 +164,7 @@ def Back(*args):
        img_No = 1
     else:
        img_No = img_no
-    image = cv2.imread(ImgDir + "input_data/Test_{}/{}.png".format(Test_no, img_No))
+    image = cv2.imread(out_img+ "{:06}.jpg".format(img_No))
     scaledImg = image.copy()
     Pc = np.array([])
     arry = []
@@ -200,8 +175,8 @@ def Back(*args):
 def Save(*args):
     global img_No, image, Pc, Hws, Hcs
     cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
-    np.savetxt(ImgDir+"output_data/output_labels/Test_{}/Annotations/Hc_Test_{}_gt.txt".format(Test_no,Test_no),Hcs)
-    np.savetxt(ImgDir+"output_data/output_labels/Test_{}/Annotations/Hw_Test_{}_gt.txt".format(Test_no,Test_no),Hws)   
+    np.savetxt(out_annot+"Hc_Test_{}_gt.txt".format(Test_no),Hcs)
+    np.savetxt(out_annot+"Hw_Test_{}_gt.txt".format(Test_no),Hws)   
     
 def OpenImgLabel(*args):
     global img_No, Pc, Hws, Hcs, PW
@@ -213,13 +188,13 @@ def OpenImgLabel(*args):
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
-    np.savetxt(ImgDir+"output_data/output_labels/Test_{}/Annotations/Hc_Test_{}_gt.txt".format(Test_no,Test_no),Hcs)
-    np.savetxt(ImgDir+"output_data/output_labels/Test_{}/Annotations/Hw_Test_{}_gt.txt".format(Test_no,Test_no),Hws)
+    np.savetxt(out_annot+"Hc_Test_{}_gt.txt".format(Test_no),Hcs)
+    np.savetxt(out_annot+"Hw_Test_{}_gt.txt".format(Test_no),Hws)
 
     global catID
     if catID == 11:
        catID = 1
-    im = cv2.imread(ImgDir + "input_data/Test_{}/{}.png".format(Test_no, img_No))
+    im = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     
     pc = est_pc(Hc, K, cat_id = catID)
@@ -227,8 +202,8 @@ def OpenImgLabel(*args):
     #plot_box(pc, clr_lines = "green", clr_corners = "red", clr_int_corners = "blue")
     plot_box(pc, clr_lines = "orange", corners = False, int_corners = False, linewidth=1.3,  label = 'TNN-PnP Est. for Real imgs')
     imshow(im)
-    plt.savefig(ImgDir+"output_data/output_labels/Test_{}/{}.png".format(Test_no, img_No))
-    im = cv2.imread(ImgDir+"output_data/output_labels/Test_{}/{}.png".format(Test_no, img_No))
+    plt.savefig(out_label+"{:06}.jpg".format(img_No))
+    im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
     cv2.imshow("Label",im)
     cv2.waitKey(5000)  
     cv2.destroyWindow("Label") 
@@ -296,7 +271,7 @@ def Tick34(*args): click(34)
 def Tick(*args): pass
 
 # Read Images
-image = cv2.imread(ImgDir + "input_data/Test_{}/{}.png".format(Test_no, img_No))
+image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
 
 scaledImg= image.copy()
 # Make a temporary image, will be useful to clear the drawing
@@ -389,25 +364,3 @@ c = cv2.waitKey(0)
 cv2.destroyAllWindows() 
 
 
-
- 
-
- 
-
- 
-
- 
- 
-
- 
-#while True:
-#     
-#    cv2.imshow('image',img)
-#     
-#    # get the updated values from the trackbar
-#    radius = cv2.getTrackbarPos('Radius', 'image')
-# 
-#    if cv2.waitKey(20) & 0xFF == 27:
-#        break
-#         
-#cv2.destroyAllWindows()
