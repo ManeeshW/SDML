@@ -140,6 +140,14 @@ def Next(*args):
        img_No = No_imgs_in_folder
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
+    print(img_no-1)
+    imN = torch.ones(Pc.shape[0]) * (img_no-1)
+   #  print(torch.ones(Pc.shape[0]))
+   #  print(torch.from_numpy(Pc).size())
+   #  print(torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1))
+    p = torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1)
+    torch.save(p, 'q.pt')
+    torch.save(p, 'queries1.pt')
     Pc = np.array([])
     arry = []
     print("Next : ", img_no)

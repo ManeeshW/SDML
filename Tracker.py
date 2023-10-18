@@ -16,14 +16,14 @@ N = args.N
 def mode(N):
     video = read_images_from_path(Input_ImgDir, 1, N)
     video = torch.from_numpy(video).permute(0, 3, 1, 2)[None].float()
-    queries = torch.tensor([
-        [0., 400., 350.],  # point tracked from the first frame
-        [10., 600., 500.], # frame number 10
-        [20., 750., 600.], # ...
-        [30., 900., 200.]
-    ])
-
-
+    # queries = torch.tensor([
+    #     [0., 400., 350.],  # point tracked from the first frame
+    #     [10., 600., 500.], # frame number 10
+    #     [20., 750., 600.], # ...
+    #     [30., 900., 200.]
+    # ])
+    # print(queries.size())
+    queries = torch.load('q.pt')
     model = CoTrackerPredictor(checkpoint='cotracker/ckpt/cotracker_stride_4_wind_8.pth')
 
     if torch.cuda.is_available():
@@ -34,5 +34,6 @@ def mode(N):
     pred_tracks, pred_visibility = model(video, queries=queries.unsqueeze(0))
     print(pred_tracks.size())
     torch.save(pred_tracks, 'tensor.pt')
+    torch.save(queries, 'queries.pt')
 
 mode(N)
