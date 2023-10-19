@@ -9,8 +9,6 @@ import subprocess
 import torch
 from config import *
 
-
-
 img_No = 1
 #Input_ImgDir = ImgDir + "input_data/Test_{}/".format(Test_no)
 images = os.listdir(Input_ImgDir)
@@ -23,8 +21,6 @@ catID = 1
 
 Hws = np.zeros((No_imgs_in_folder,12))
 Hcs = np.zeros((No_imgs_in_folder,12))
-
-
 
 # Lists to store the bounding box coordinates
 top_left_corner=[]
@@ -106,14 +102,20 @@ def drawLine(action, x, y, flags, *userdata):
        if Pc[i][0] ==  MMD[0] and Pc[i][1] ==  MMD[1]:
          cv2.circle(image, (MMD[0],MMD[1]), 1, (255,255,0), -1)
 
-
   if curr_img_no != img_No:
      curr_img_no = img_No
      scaleValue = 0
      scaleFactor = 1
      cv2.setTrackbarPos('Scale', 'Window', 0)
      cv2.imshow("Window",scaledImg)
-     
+
+def trackedImg(im, imgNo):
+    x = torch.load('tracked.pt')
+    p = x.cpu().numpy().astype(np.int16)
+    for i in range(p.shape[2]):
+        cv2.circle(im, p[0][imgNo-1][i,:].tolist(), 1,(200,100,205), -1)
+    return im
+
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def scaleIt(x):
     global scaledImg
@@ -130,32 +132,44 @@ def scaleImage(value=0):
     scaledImg = cv2.resize(image, None, fx=scaleFactor, fy = scaleFactor, interpolation = cv2.INTER_LINEAR)
     return scaledImg
     
-
 def Next(*args):
     global img_No, image, scaledImg, Pc, arry
     img_no = img_No+1
+
     if img_no <= No_imgs_in_folder:
        img_No = img_no
     else:
        img_No = No_imgs_in_folder
+
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
-    print(img_no-1)
     imN = torch.ones(Pc.shape[0]) * (img_no-1)
    #  print(torch.ones(Pc.shape[0]))
    #  print(torch.from_numpy(Pc).size())
    #  print(torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1))
     p = torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1)
-    torch.save(p, 'q.pt')
-    torch.save(p, 'queries1.pt')
+    print(img_no)
+    trackedImg(scaledImg, img_No)
     Pc = np.array([])
-    arry = []
-    print("Next : ", img_no)
-    subprocess.check_output(["python3 Tracker.py -N {}".format(img_no)],shell=True)
-    x = torch.load('tensor.pt')
-    print(x.size())
+    arry = []    
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.imshow("Window",scaledImg)
+
+def ShowTracked(*args):
+    global img_No, image, scaledImg, Pc, arry
+    im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
+    trackedImg(im, img_No)
+    cv2.imshow("Window",im)
+
+def Track(*args):
+    global img_No, image, scaledImg, Pc, arry
+    print(img_No)
+    
+    imN = torch.ones(Pc.shape[0]) * img_No
+    quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1)
+    print(quaries)
+    torch.save(quaries, 'q.pt')
+    subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_No + 100)],shell=True)
 
 def Refresh(*args):
     global img_No, image, scaledImg, Pc, arry
@@ -172,13 +186,12 @@ def Back(*args):
        img_No = 1
     else:
        img_No = img_no
-    image = cv2.imread(out_img+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg = image.copy()
     Pc = np.array([])
     arry = []
     cv2.setTrackbarPos('Scale', 'Window', 0)
-    cv2.imshow("Window",scaledImg)
-   
+    cv2.imshow("Window",scaledImg) 
     
 def Save(*args):
     global img_No, image, Pc, Hws, Hcs
@@ -235,8 +248,6 @@ def click(j=1):
    if TK[i]:
       TK[i] = 0
       deletePw(TK, PW_label)
-
-
    else:
       TK[i] = 1
       deletePw(TK, PW_label)
@@ -292,9 +303,12 @@ cv2.setMouseCallback("Window", drawLine)
 # Create trackbar and associate a callback function / Attach mouse call back to a window and a method
 #cv2.setMouseCallback('Window', draw_circle)
 # cv2.createButton("Window",back)
+
 cv2.createButton("Back",Back,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Refresh",Refresh,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Next",Next,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Img-Label",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
 

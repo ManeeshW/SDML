@@ -37,8 +37,8 @@ def read_images_from_path(path, StartNo, EndNo):
     files.sort()
     frames = []
 
-    for i in range(StartNo-1, EndNo):
-        frame = cv2.imread(path+files[i],1)
+    for i in range(StartNo, EndNo+1):
+        frame = cv2.imread(path+files[i-1],1)
         frames.append(np.array(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
     return np.stack(frames)
 

@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from cotracker.predictor import CoTrackerPredictor
 from cotracker.utils.visualizer import Visualizer, read_video_from_path, read_images_from_path
 import argparse
@@ -6,15 +7,18 @@ from config import *
 
 parser = argparse.ArgumentParser(description="Synthetic image generation")
 
-parser.add_argument('-N', type=int, default=2,
+parser.add_argument('-S', type=int, default=1,
+                        help='Number of images want to be generated')
+
+parser.add_argument('-N', type=int, default=20,
                         help='Number of images want to be generated')
 
 args = parser.parse_args()
 N = args.N
-
+S = args.S
 #N = 20
-def mode(N):
-    video = read_images_from_path(Input_ImgDir, 1, N)
+def mode(S, N):
+    video = read_images_from_path(Input_ImgDir, S, N)
     video = torch.from_numpy(video).permute(0, 3, 1, 2)[None].float()
     # queries = torch.tensor([
     #     [0., 400., 350.],  # point tracked from the first frame
@@ -33,7 +37,6 @@ def mode(N):
 
     pred_tracks, pred_visibility = model(video, queries=queries.unsqueeze(0))
     print(pred_tracks.size())
-    torch.save(pred_tracks, 'tensor.pt')
-    torch.save(queries, 'queries.pt')
-
-mode(N)
+    torch.save(pred_tracks, 'tracked.pt')
+    
+mode(S, N)

@@ -20,7 +20,7 @@ class CoTrackerPredictor(torch.nn.Module):
         self, checkpoint="cotracker/checkpoints/cotracker_stride_4_wind_8.pth"
     ):
         super().__init__()
-        self.interp_shape = (384, 512)
+        self.interp_shape = (480, 640)
         self.support_grid_size = 6
         model = build_cotracker(checkpoint)
 
