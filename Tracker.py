@@ -7,10 +7,10 @@ from config import *
 
 parser = argparse.ArgumentParser(description="Synthetic image generation")
 
-parser.add_argument('-S', type=int, default=1,
+parser.add_argument('-S', type=int, default=100,
                         help='Number of images want to be generated')
 
-parser.add_argument('-N', type=int, default=20,
+parser.add_argument('-N', type=int, default=423,
                         help='Number of images want to be generated')
 
 args = parser.parse_args()
