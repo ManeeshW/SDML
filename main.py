@@ -3,6 +3,7 @@ import os
 import numpy as np
 from lib.plot import *
 from lib.esti import *
+from lib.Cat import *
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 import subprocess
@@ -20,8 +21,8 @@ No_imgs_in_folder = len(images)
 print("No. Images : ",No_imgs_in_folder)
 curr_img_no = 0
 pc = np.array([])
+rc = np.array([])
 Pcs = np.array([])
-arry = []
 catID = 1
 
 Hws = np.zeros((No_imgs_in_folder,12))
@@ -47,7 +48,7 @@ PH = 1 #prediction horizon
 # function which will be called on mouse input
 def drawLine(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global MMD, top_left_corner,top_left_corner_scale, bottom_right_corner,bottom_right_corner_scale, scaledImg, image, arry, pc, curr_img_no, scaleFactor
+  global MMD, top_left_corner,top_left_corner_scale, bottom_right_corner,bottom_right_corner_scale, scaledImg, image, pc, rc,  curr_img_no, scaleFactor
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
   scaleFactor = 1+ scaleValue/100.0
@@ -62,10 +63,8 @@ def drawLine(action, x, y, flags, *userdata):
    top_left_corner = [(x,y)]
    top_left_corner_scale = [(int(x/scaleFactor),int(y/scaleFactor))]
    
-   #print(np.array([x,y]))
-   arry.append([x,y])
-   pc = np.array(arry)
-
+   pc = cat(pc, [x,y])
+   rc = np.array([])
     #arr = np.append([arr,], axis=0)
     # When left mouse button is released, mark bottom right corner
   elif action == cv2.EVENT_LBUTTONUP:
@@ -113,7 +112,7 @@ def scaleImage(value=0):
     return scaledImg
     
 def Next(*args):
-    global img_No, image, scaledImg, pc, arry, PH
+    global img_No, image, scaledImg, pc, PH, rc
     img_no = img_No+1
     PH = PH+1
     if img_no <= No_imgs_in_folder:
@@ -130,12 +129,12 @@ def Next(*args):
     p = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc)), dim=1)
     trackedImg(scaledImg, PH)
     pc = np.array([])
-    arry = []    
+ 
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.imshow("Window",scaledImg)
 
 def ShowTracked(*args):
-    global img_No, image, scaledImg, pc, arry, PH
+    global img_No, image, scaledImg, pc, PH
     im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
     im, pc = trackedImg(im, PH)
     cv2.imshow("Window",im)
@@ -144,28 +143,65 @@ def trackedImg(im, No):
     x = torch.load('tracked.pt')
     p = x.cpu().numpy().astype(np.int16)
     for i in range(p.shape[2]):
+        print(p[0][No-1][i,:].tolist())
         cv2.circle(im, p[0][No-1][i,:].tolist(), 1,(200,100,205), -1)
     return im, p[0][No-1]
 
 def Track(*args):
-    global img_No, image, scaledImg, pc, arry, PH
+    global img_No, image, scaledImg, pc, PH
     PH = 1
     imN = torch.ones(pc.shape[0]) * (PH-1)
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc)), dim=1)
+    print(quaries.size())
     torch.save(quaries, 'q.pt')
     subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_No + 100)],shell=True)
     print("Img : ", img_No, " - ", img_No + 100, "  Tracked")
 
 def Refresh(*args):
-    global img_No, image, scaledImg, pc, arry
+    global img_No, image, scaledImg, pc
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
     pc = np.array([])
-    arry = []
+    cv2.imshow("Window",scaledImg)
+
+def Undo(*args):
+    global img_No, image, scaledImg, pc, rc
+    print("pc before : ", pc)
+    print("rc before : ", rc)
+    try:
+        rc = cat(rc, pc[-1])
+        pc = pc[:-1]
+        print("pc after : ", pc)
+        print("rc after : ", rc)
+        print("--------------")
+    except:
+        pass
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    for i in range(pc.shape[0]):
+       cv2.circle(image, (pc[i][0],pc[i][1]) , 1,(255,255,0), -1)
+    scaledImg= image.copy()
+    cv2.imshow("Window",scaledImg)
+
+def Redo(*args):
+    global img_No, image, scaledImg, pc, rc
+    print("pc before : ", pc)
+    print("rc before : ", rc)
+    try:
+        pc = cat(pc,rc[-1])
+        rc = rc[:-1]
+    except:
+        pass
+    print("pc after : ", pc)
+    print("rc after : ", rc)
+    print("------rc--------")
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    for i in range(pc.shape[0]):
+       cv2.circle(image, (pc[i][0],pc[i][1]) , 1,(255,255,0), -1)
+    scaledImg= image.copy()
     cv2.imshow("Window",scaledImg)
 
 def Back(*args):
-    global img_No, image, scaledImg, pc, arry, PH
+    global img_No, image, scaledImg, pc, PH
     img_no = img_No-1
     PH = PH-1
     if img_no < 1:
@@ -175,7 +211,7 @@ def Back(*args):
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg = image.copy()
     pc = np.array([])
-    arry = []
+
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.imshow("Window",scaledImg) 
     
@@ -237,6 +273,8 @@ cv2.setMouseCallback("Window", drawLine)
 
 cv2.createButton("Back",Back,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Refresh",Refresh,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Undo",Undo,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Next",Next,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
