@@ -1,9 +1,9 @@
 import cv2
 import os
 import numpy as np
-from lib.plot import *
-from lib.esti import *
-from lib.Cat import *
+from mlib.plot import *
+from mlib.esti import *
+from mlib.Cat import *
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 import subprocess
