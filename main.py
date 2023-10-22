@@ -8,6 +8,10 @@ from matplotlib.pyplot import imshow
 import subprocess
 import torch
 from config import *
+import pandas as pd
+
+from pd.CSV import CSV
+
 
 img_No = 1
 #Input_ImgDir = ImgDir + "input_data/Test_{}/".format(Test_no)
@@ -16,6 +20,7 @@ No_imgs_in_folder = len(images)
 print("No. Images : ",No_imgs_in_folder)
 curr_img_no = 0
 Pc = np.array([])
+Pcs = np.array([])
 arry = []
 catID = 1
 
@@ -37,23 +42,25 @@ scaleFactor = 0
 #windowName = "Resize Image"
 trackbarValue = "Scale"
 
-def fourPointsOnLine(P_A, P_B):
-   P_C = P_A + (P_B-P_A) / 3
-   P_D = P_A + 2* (P_B-P_A) / 3
-   P = np.concatenate((P_C, P_D), axis=0).reshape(2,P_A.shape[0])
-   P_all = np.concatenate((P_A, P_C, P_D, P_B), axis=0).reshape(4,P_A.shape[0])
-   return P_all, P
+PH = 1 #prediction horizon
 
-def BipartiteInterpolation(P):
-    P_I = []
-    for i in range(P.shape[0]):
-        for j in range(i+1,P.shape[0]):
-            _ , p_i = fourPointsOnLine(P[i], P[j])
-            P_I = np.append(P_I,p_i.reshape(-1), axis=0)
+# def fourPointsOnLine(P_A, P_B):
+#    P_C = P_A + (P_B-P_A) / 3
+#    P_D = P_A + 2* (P_B-P_A) / 3
+#    P = np.concatenate((P_C, P_D), axis=0).reshape(2,P_A.shape[0])
+#    P_all = np.concatenate((P_A, P_C, P_D, P_B), axis=0).reshape(4,P_A.shape[0])
+#    return P_all, P
 
-    P_Is = P_I.reshape(-1,P.shape[1])
-    Pc  = np.concatenate((P,P_Is), axis = 0)
-    return Pc
+# def BipartiteInterpolation(P):
+#     P_I = []
+#     for i in range(P.shape[0]):
+#         for j in range(i+1,P.shape[0]):
+#             _ , p_i = fourPointsOnLine(P[i], P[j])
+#             P_I = np.append(P_I,p_i.reshape(-1), axis=0)
+
+#     P_Is = P_I.reshape(-1,P.shape[1])
+#     Pc  = np.concatenate((P,P_Is), axis = 0)
+#     return Pc
         
 # function which will be called on mouse input
 def drawLine(action, x, y, flags, *userdata):
@@ -109,13 +116,6 @@ def drawLine(action, x, y, flags, *userdata):
      cv2.setTrackbarPos('Scale', 'Window', 0)
      cv2.imshow("Window",scaledImg)
 
-def trackedImg(im, imgNo):
-    x = torch.load('tracked.pt')
-    p = x.cpu().numpy().astype(np.int16)
-    for i in range(p.shape[2]):
-        cv2.circle(im, p[0][imgNo-1][i,:].tolist(), 1,(200,100,205), -1)
-    return im
-
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def scaleIt(x):
     global scaledImg
@@ -133,9 +133,9 @@ def scaleImage(value=0):
     return scaledImg
     
 def Next(*args):
-    global img_No, image, scaledImg, Pc, arry
+    global img_No, image, scaledImg, Pc, arry, PH
     img_no = img_No+1
-
+    PH = PH+1
     if img_no <= No_imgs_in_folder:
        img_No = img_no
     else:
@@ -148,28 +148,33 @@ def Next(*args):
    #  print(torch.from_numpy(Pc).size())
    #  print(torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1))
     p = torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1)
-    print(img_no)
-    trackedImg(scaledImg, img_No)
+    trackedImg(scaledImg, PH)
     Pc = np.array([])
     arry = []    
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.imshow("Window",scaledImg)
 
 def ShowTracked(*args):
-    global img_No, image, scaledImg, Pc, arry
+    global img_No, image, scaledImg, Pc, arry, PH
     im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
-    trackedImg(im, img_No)
+    im, Pc = trackedImg(im, PH)
     cv2.imshow("Window",im)
 
+def trackedImg(im, No):
+    x = torch.load('tracked.pt')
+    p = x.cpu().numpy().astype(np.int16)
+    for i in range(p.shape[2]):
+        cv2.circle(im, p[0][No-1][i,:].tolist(), 1,(200,100,205), -1)
+    return im, p[0][No-1]
+
 def Track(*args):
-    global img_No, image, scaledImg, Pc, arry
-    print(img_No)
-    
-    imN = torch.ones(Pc.shape[0]) * img_No
+    global img_No, image, scaledImg, Pc, arry, PH
+    PH = 1
+    imN = torch.ones(Pc.shape[0]) * (PH-1)
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(Pc)), dim=1)
-    print(quaries)
     torch.save(quaries, 'q.pt')
     subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_No + 100)],shell=True)
+    print("Img : ", img_No, " - ", img_No + 100, "  Tracked")
 
 def Refresh(*args):
     global img_No, image, scaledImg, Pc, arry
@@ -180,8 +185,9 @@ def Refresh(*args):
     cv2.imshow("Window",scaledImg)
 
 def Back(*args):
-    global img_No, image, scaledImg, Pc, arry
+    global img_No, image, scaledImg, Pc, arry, PH
     img_no = img_No-1
+    PH = PH-1
     if img_no < 1:
        img_No = 1
     else:
@@ -202,10 +208,14 @@ def Save(*args):
 def OpenImgLabel(*args):
     global img_No, Pc, Hws, Hcs, PW
 
+    df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
+    csv = CSV(df)
+    PW = csv.Pw
+
     fig = plt.figure(figsize=(6.4,4.8),dpi = 150)
    #  Pws = BipartiteInterpolation(PW)
    #  Pcs = BipartiteInterpolation(Pc)
-    Hc, Hw = Epnp2Hc(x, PW, Pc, K, dist = None)
+    Hc, Hw = Epnp2H(PW, Pc, K, dist = None)
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
@@ -232,62 +242,64 @@ def OpenImgLabel(*args):
     fig.canvas.flush_events()
     catID = 1
 
-def deletePw(TK, PW_label):
-   global PW
-   Del = []
-   for i in range(TK.shape[0]):
-      if TK[i] == 0:
-         Del = np.append(Del, i).astype(int)
-   PW = PW_label.copy()
-   PW = np.delete(PW,Del,axis=0)
+# def undo():
+#     global Pc
+# def deletePw(TK, PW_label):
+#     PW
+#    Del = []
+#    for i in range(TK.shape[0]):
+#       if TK[i] == 0:
+#          Del = np.append(Del, i).astype(int)
+#    PW = PW_label.copy()
+#    PW = np.delete(PW,Del,axis=0)
 
 
-def click(j=1): 
-   i = j-1
-   global TK
-   if TK[i]:
-      TK[i] = 0
-      deletePw(TK, PW_label)
-   else:
-      TK[i] = 1
-      deletePw(TK, PW_label)
+# def click(j=1): 
+#    i = j-1
+#    global TK
+#    if TK[i]:
+#       TK[i] = 0
+#       deletePw(TK, PW_label)
+#    else:
+#       TK[i] = 1
+#       deletePw(TK, PW_label)
 
 
-def Tick1(*args): click(1)
-def Tick2(*args): click(2)
-def Tick3(*args): click(3)
-def Tick4(*args): click(4)
-def Tick5(*args): click(5)
-def Tick6(*args): click(6)
-def Tick7(*args): click(7)
-def Tick8(*args): click(8)
-def Tick9(*args): click(9)
-def Tick10(*args): click(10)
-def Tick11(*args): click(11)
-def Tick12(*args): click(12)
-def Tick13(*args): click(13)
-def Tick14(*args): click(14)
-def Tick15(*args): click(15)
-def Tick16(*args): click(16)
-def Tick17(*args): click(17)
-def Tick18(*args): click(18)
-def Tick19(*args): click(19)
-def Tick20(*args): click(20)
-def Tick21(*args): click(21)
-def Tick22(*args): click(22)
-def Tick23(*args): click(23)
-def Tick24(*args): click(24)
-def Tick25(*args): click(25)
-def Tick26(*args): click(26)
-def Tick27(*args): click(27)
-def Tick28(*args): click(28)
-def Tick29(*args): click(29)
-def Tick30(*args): click(30)
-def Tick31(*args): click(31)
-def Tick32(*args): click(32)
-def Tick33(*args): click(33)
-def Tick34(*args): click(34)
-def Tick(*args): pass
+# def Tick1(*args): click(1)
+# def Tick2(*args): click(2)
+# def Tick3(*args): click(3)
+# def Tick4(*args): click(4)
+# def Tick5(*args): click(5)
+# def Tick6(*args): click(6)
+# def Tick7(*args): click(7)
+# def Tick8(*args): click(8)
+# def Tick9(*args): click(9)
+# def Tick10(*args): click(10)
+# def Tick11(*args): click(11)
+# def Tick12(*args): click(12)
+# def Tick13(*args): click(13)
+# def Tick14(*args): click(14)
+# def Tick15(*args): click(15)
+# def Tick16(*args): click(16)
+# def Tick17(*args): click(17)
+# def Tick18(*args): click(18)
+# def Tick19(*args): click(19)
+# def Tick20(*args): click(20)
+# def Tick21(*args): click(21)
+# def Tick22(*args): click(22)
+# def Tick23(*args): click(23)
+# def Tick24(*args): click(24)
+# def Tick25(*args): click(25)
+# def Tick26(*args): click(26)
+# def Tick27(*args): click(27)
+# def Tick28(*args): click(28)
+# def Tick29(*args): click(29)
+# def Tick30(*args): click(30)
+# def Tick31(*args): click(31)
+# def Tick32(*args): click(32)
+# def Tick33(*args): click(33)
+# def Tick34(*args): click(34)
+# def Tick(*args): pass
 
 # Read Images
 image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
@@ -312,47 +324,47 @@ cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Img-Label",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
 
-cv2.createButton("Dog house F1",Tick1,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,0) # create a push button in a new row
-cv2.createButton("Window 1",Tick6,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark A 1",Tick10,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark B 1",Tick14,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark C 1",Tick18,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("LandingMark D 1",Tick22,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Landing 1",Tick26,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Light               ",Tick30,None,cv2.QT_CHECKBOX,0) #Light 1    
-cv2.createButton("Back 1",Tick33,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Dog house F1",Tick1,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,0) # create a push button in a new row
+# cv2.createButton("Window 1",Tick6,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark A 1",Tick10,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark B 1",Tick14,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark C 1",Tick18,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("LandingMark D 1",Tick22,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Landing 1",Tick26,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Light               ",Tick30,None,cv2.QT_CHECKBOX,0) #Light 1    
+# cv2.createButton("Back 1",Tick33,None,cv2.QT_CHECKBOX,0)
 
-cv2.createButton("Dog house F2",Tick2,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
-cv2.createButton("Window 2",Tick7,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark A 2",Tick11,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark B 2",Tick15,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("LandingMark C 2",Tick19,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("LandingMark D 2",Tick23,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Landing 2",Tick27,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Dog house B 1",Tick31,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Back 2",Tick34,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Dog house F2",Tick2,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
+# cv2.createButton("Window 2",Tick7,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark A 2",Tick11,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark B 2",Tick15,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("LandingMark C 2",Tick19,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("LandingMark D 2",Tick23,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Landing 2",Tick27,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Dog house B 1",Tick31,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Back 2",Tick34,None,cv2.QT_CHECKBOX,0)
 
-cv2.createButton("Dog house F3",Tick3,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
-cv2.createButton("Window 3",Tick8,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark A 3",Tick12,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark B 3",Tick16,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("LandingMark C 3",Tick20,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("LandingMark D 3",Tick24,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Landing 3",Tick28,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Dog house B 2",Tick32,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("    2 ",Tick,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Dog house F3",Tick3,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
+# cv2.createButton("Window 3",Tick8,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark A 3",Tick12,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark B 3",Tick16,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("LandingMark C 3",Tick20,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("LandingMark D 3",Tick24,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Landing 3",Tick28,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Dog house B 2",Tick32,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("    2 ",Tick,None,cv2.QT_CHECKBOX,0)
 
-cv2.createButton("Dog house F4",Tick4,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
-cv2.createButton("Window 4",Tick9,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark A 4",Tick13,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark B 4",Tick17,None,cv2.QT_CHECKBOX,1)
-cv2.createButton("LandingMark C 4",Tick21,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("LandingMark D 4",Tick25,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("Landing 4",Tick29,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("     3       ",Tick,None,cv2.QT_CHECKBOX,0)
-cv2.createButton("   4  ",Tick,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Dog house F4",Tick4,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
+# cv2.createButton("Window 4",Tick9,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark A 4",Tick13,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark B 4",Tick17,None,cv2.QT_CHECKBOX,1)
+# cv2.createButton("LandingMark C 4",Tick21,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("LandingMark D 4",Tick25,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("Landing 4",Tick29,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("     3       ",Tick,None,cv2.QT_CHECKBOX,0)
+# cv2.createButton("   4  ",Tick,None,cv2.QT_CHECKBOX,0)
 
-cv2.createButton("Dog house F5",Tick5,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
+# cv2.createButton("Dog house F5",Tick5,None,cv2.QT_CHECKBOX|cv2.QT_NEW_BUTTONBAR,1) # create a push button in a new row
 
 
 
