@@ -134,6 +134,7 @@ def ShowTracked(*args):
     global img_No, image, scaledImg, pc, PH
     im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
     im, pc = trackedImg(im, PH)
+    print("tracked pc_t : ", pc)
     cv2.imshow("Window",im)
 
 def trackedImg(im, No):
@@ -152,9 +153,11 @@ def Track(*args):
     print(quaries.size())
     torch.save(quaries, 'q.pt')
     if img_No+100 > No_imgs_in_folder:
-        subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, No_imgs_in_folder)],shell=True)
+        img_Tracked = No_imgs_in_folder
     else:
-       subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_No + 100)],shell=True)
+       img_Tracked = img_No+100
+       
+    subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_Tracked)],shell=True)
     print("Img : ", img_No, " - ", img_No + 100, "  Tracked")
 
 def Refresh(*args):
@@ -166,14 +169,14 @@ def Refresh(*args):
 
 def Undo(*args):
     global img_No, image, scaledImg, pc, rc
-    print("pc before : ", pc)
-    print("rc before : ", rc)
+    # print("pc before : ", pc)
+    # print("rc before : ", rc)
     try:
         rc = cat(rc, pc[-1])
         pc = pc[:-1]
-        print("pc after : ", pc)
-        print("rc after : ", rc)
-        print("--------------")
+        # print("pc after : ", pc)
+        # print("rc after : ", rc)
+        # print("--------------")
     except:
         pass
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
@@ -184,16 +187,16 @@ def Undo(*args):
 
 def Redo(*args):
     global img_No, image, scaledImg, pc, rc
-    print("pc before : ", pc)
-    print("rc before : ", rc)
+    # print("pc before : ", pc)
+    # print("rc before : ", rc)
     try:
         pc = cat(pc,rc[-1])
         rc = rc[:-1]
     except:
         pass
-    print("pc after : ", pc)
-    print("rc after : ", rc)
-    print("------rc--------")
+    # print("pc after : ", pc)
+    # print("rc after : ", rc)
+    # print("------rc--------")
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     for i in range(pc.shape[0]):
        cv2.circle(image, (pc[i][0],pc[i][1]) , 1,(255,255,0), -1)
@@ -224,7 +227,7 @@ def Save(*args):
     
 def OpenImgLabel(*args):
     global img_No, pc, Hws, Hcs, PW
-
+    print(pc)
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
     csv = CSV(df)
     PW = csv.Pw

@@ -10,7 +10,7 @@ class CSV:
         p5d = self.get_5x1(df,'Pw')[np.where(self.get_5x1(df,'Pw')[:, 4]>0)]
         self.Pw = p5d[:,1:4]
         self.idx = p5d[:,0]
-        self.Nidx= nKeysU[nKeysU[:, 1].argsort()][:, 0]
+        self.nidx= nKeysU[nKeysU[:, 1].argsort()][:, 0]
 
     def get_5x1(self, df, label):
         return np.vstack(
