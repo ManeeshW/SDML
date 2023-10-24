@@ -10,7 +10,6 @@ import subprocess
 import torch
 from config import *
 import pandas as pd
-
 from pd.CSV import CSV
 
 
@@ -30,12 +29,11 @@ def imageScroll(x):
     cv2.imshow("Window",scaledImg) 
     pass
 
-
 pc = np.array([])
+pc_tracked = np.array([])
 rc = np.array([])
+pcs_added = np.array([])
 
-
-Pcs = np.array([])
 catID = 1
 
 Hws = np.zeros((No_imgs_in_folder,12))
@@ -55,17 +53,21 @@ trackbarValue = "Scale"
 
 PH = 1 #prediction horizon
 
-def markPoint(pc, image,  win = "Window", color = (120,255,0)):
+def markPointWin(pc, image,  win = "Window", color = (120,255,50)):
     for i in range(pc.shape[0]):
        cv2.circle(image, (pc[i][0],pc[i][1]) , 1,color, -1)
     scaledImg= image.copy()
     cv2.imshow(win,scaledImg)
     return scaledImg
 
+def markPoint(pc, image, color = (120,255,50)):
+    for i in range(pc.shape[0]):
+       cv2.circle(image, (pc[i][0],pc[i][1]) , 1,color, -1)
+
 # function which will be called on mouse input
-def drawLine(action, x, y, flags, *userdata):
+def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global  scaledImg, image, pc, rc,  curr_img_no
+  global  scaledImg, image, pc, pc_tracked, rc,  curr_img_no
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
   scaleFactor = 1+ scaleValue/100.0
@@ -76,7 +78,10 @@ def drawLine(action, x, y, flags, *userdata):
   if action == cv2.EVENT_LBUTTONDOWN:
    pc = cat(pc, [x,y])
    rc = np.array([])
-   scaledImg = markPoint(pc, image, win = "Window")
+   markPoint(pc, image)
+   markPoint(pc_tracked, image, (255,120,50))
+   scaledImg= image.copy()
+   cv2.imshow("Window",scaledImg)
 
   elif action == cv2.EVENT_MOUSEMOVE:
      cv2.line(scaledImg, (x-3,y),(x-6,y), (255,20,200), 1)
@@ -85,9 +90,11 @@ def drawLine(action, x, y, flags, *userdata):
      cv2.line(scaledImg, (x,y+3),(x,y+6), (255,20,200), 1)
 
      cv2.circle(scaledImg, (x,y), 1, (255,20,200), -1)
+     
+     markPoint(pc_tracked, scaledImg, (255,120,0))
      cv2.imshow("Window",scaledImg)
      scaledImg = cv2.resize(image, None, fx=scaleFactor, fy = scaleFactor, interpolation = cv2.INTER_LINEAR)
-
+     #cv2.imshow("Window",scaledImg)
   if curr_img_no != img_No:
      curr_img_no = img_No
      scaleValue = 0
@@ -130,11 +137,17 @@ def Next(*args):
     cv2.setTrackbarPos('Img No', 'Window', img_No)
     cv2.imshow("Window",scaledImg)
 
+def status(*args):
+    global img_No, pc, pc_tracked, PH
+    print("img_No : ", img_No)
+    print("Points Selected : \n", pc)
+    print("Points Tracked : \n", pc_tracked)
+
 def ShowTracked(*args):
-    global img_No, image, scaledImg, pc, PH
+    global img_No, image, scaledImg, pc, pc_tracked, PH
     im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
-    im, pc = trackedImg(im, PH)
-    print("tracked pc_t : ", pc)
+    im, pc_tracked = trackedImg(im, PH)
+    print("tracked pc_t : ", pc_tracked)
     cv2.imshow("Window",im)
 
 def trackedImg(im, No):
@@ -150,7 +163,7 @@ def Track(*args):
     PH = 1
     imN = torch.ones(pc.shape[0]) * (PH-1)
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc)), dim=1)
-    print(quaries.size())
+    #print(quaries.size())
     torch.save(quaries, 'q.pt')
     if img_No+100 > No_imgs_in_folder:
         img_Tracked = No_imgs_in_folder
@@ -270,16 +283,18 @@ temp = image.copy()
 cv2.namedWindow("Window")
 cv2.namedWindow("Label")
 # highgui function called when mouse events occur
-cv2.setMouseCallback("Window", drawLine)
+cv2.setMouseCallback("Window", selectKeyPoints)
 # Create trackbar and associate a callback function / Attach mouse call back to a window and a method
 #cv2.setMouseCallback('Window', draw_circle)
 # cv2.createButton("Window",back)
 
-cv2.createButton("Back",Back,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("<-Back",Back,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Status",status,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Refresh",Refresh,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Undo",Undo,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Next",Next,None,cv2.QT_PUSH_BUTTON,1)
+
 cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Img-Label",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
