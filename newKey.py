@@ -21,6 +21,7 @@ def keypointUpdate(idx_t, pc_t, pc_added, csv):
     Pw = csv.Pw
     idx_common = np.intersect1d(idx_t,idx_curnt) # common idx current and previos
     pc_curr_comm = pc_t[np.in1d(idx_t,idx_curnt)]
+    Pw = Pw[np.in1d(idx_curnt,idx_t)]
     pc_all_t = np.concatenate((np.expand_dims(idx_common, axis=1),pc_curr_comm), axis=1) # all keypoints which is tracked
     try:
         pc_all_added = np.concatenate((np.expand_dims(idx_added, axis=1),pc_added), axis=1)
@@ -44,8 +45,11 @@ def observeKeysDict(pc_prev, pc_newly_added):
     csv = CSV(df)
 
     try:
-        pc_updated, Pw = keypointUpdate(pc_prev[:,0], pc_prev[:,1:3], pc_newly_added)
+        pc_updated, Pw = keypointUpdate(pc_prev[:,0], pc_prev[:,1:3], pc_newly_added, csv)
     except:
-        pc_updated, Pw = np.concatenate((np.expand_dims(csv.idx, axis=1),pc_newly_added), axis=1)
-    Pw = csv.Pw
+        try:
+            pc_updated = np.concatenate((np.expand_dims(csv.idx, axis=1),pc_newly_added), axis=1)
+            Pw = csv.Pw
+        except:
+            print("Selected keypoints are not matched with assignment")
     return Pw, pc_updated.astype(np.int32)
