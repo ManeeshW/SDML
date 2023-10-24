@@ -1,17 +1,17 @@
 import cv2
 import os
 import numpy as np
-from mlib.plot import *
-from mlib.esti import *
-from mlib.Cat import *
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 import subprocess
 import torch
-from config import *
 import pandas as pd
 from pd.CSV import CSV
-
+from config import *
+from mlib.plot import *
+from mlib.esti import *
+from mlib.Cat import *
+from newKey import *
 
 img_No = 1
 #Input_ImgDir = ImgDir + "input_data/Test_{}/".format(Test_no)
@@ -19,23 +19,12 @@ images = os.listdir(Input_ImgDir)
 No_imgs_in_folder = len(images)
 curr_img_no = 0
 
-# Create the function for the trackbar since its mandatory but we wont be using it so pass.
-def imageScroll(x):
-    global img_No, image, scaledImg, curr_img_no
-    img_No = cv2.getTrackbarPos('Img No', 'Window')
-    curr_img_no = img_No
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    scaledImg= image.copy()
-    cv2.imshow("Window",scaledImg) 
-    pass
-
 pc = np.array([])
 pc_tracked = np.array([])
-rc = np.array([])
 pcs_added = np.array([])
-
+rc = np.array([])
 catID = 1
-
+msg = ""
 Hws = np.zeros((No_imgs_in_folder,12))
 Hcs = np.zeros((No_imgs_in_folder,12))
 
@@ -64,22 +53,30 @@ def markPoint(pc, image, color = (120,255,50)):
     for i in range(pc.shape[0]):
        cv2.circle(image, (pc[i][0],pc[i][1]) , 1,color, -1)
 
+def markTracked(pc_tracked):
+    try:
+       markPoint(pc_tracked[:,1:3], image, (0,120,255))
+    except:
+       pass
+      
+
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global  scaledImg, image, pc, pc_tracked, rc,  curr_img_no
+  global  scaledImg, image, pc, pc_tracked, rc,  curr_img_no, PT, msg
+  
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
   scaleFactor = 1+ scaleValue/100.0
   
   #cv2.displayOverlay("Window", str(1.34445))
-  cv2.displayStatusBar("Window", "Image No : {}      {}|{}".format(img_No,int(x/scaleFactor),int(y/scaleFactor))) 
+  cv2.displayStatusBar("Window", "Image No : {:03d}      {:03d}|{:03d}     |  ".format(img_No,int(x/scaleFactor),int(y/scaleFactor))+ msg) 
 
   if action == cv2.EVENT_LBUTTONDOWN:
    pc = cat(pc, [x,y])
    rc = np.array([])
    markPoint(pc, image)
-   markPoint(pc_tracked, image, (255,120,50))
+   markTracked(pc_tracked)
    scaledImg= image.copy()
    cv2.imshow("Window",scaledImg)
 
@@ -90,8 +87,8 @@ def selectKeyPoints(action, x, y, flags, *userdata):
      cv2.line(scaledImg, (x,y+3),(x,y+6), (255,20,200), 1)
 
      cv2.circle(scaledImg, (x,y), 1, (255,20,200), -1)
-     
-     markPoint(pc_tracked, scaledImg, (255,120,0))
+
+     #markTracked(pc_tracked)
      cv2.imshow("Window",scaledImg)
      scaledImg = cv2.resize(image, None, fx=scaleFactor, fy = scaleFactor, interpolation = cv2.INTER_LINEAR)
      #cv2.imshow("Window",scaledImg)
@@ -119,7 +116,7 @@ def scaleImage(value=0):
     return scaledImg
     
 def Next(*args):
-    global img_No, image, scaledImg, pc, PH, rc, No_imgs_in_folder
+    global img_No, image, scaledImg, pc, PH, rc, No_imgs_in_folder, msg
     img_no = img_No+1
     if img_No < No_imgs_in_folder:
         PH = PH+1
@@ -127,43 +124,70 @@ def Next(*args):
        img_No = img_no
     else:
        img_No = No_imgs_in_folder
-
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    #cv2.circle(image, (200,200), 10,(255,255,0), -1) 
+    #image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    #
     scaledImg= image.copy()
-
+    cv2.circle(scaledImg, (200,200), 10,(255,255,0), -1)    
     pc = np.array([])
- 
+    print("PH: \n", PH)
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.setTrackbarPos('Img No', 'Window', img_No)
+    cv2.displayStatusBar("Window", "Image No : {:03d}      {:03d}|{:03d}     |  ".format(img_No,0,0)+msg)
+
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    cv2.circle(image, (200,200), 10,(255,255,0), -1)   
+    image, _ = trackedImg(image, PH)
+    scaledImg= image.copy()
     cv2.imshow("Window",scaledImg)
+    
+
+r = 1
+# Create the function for the trackbar since its mandatory but we wont be using it so pass.
+def imageScroll(x):
+    global img_No, image, scaledImg, curr_img_no
+    print(img_No)
+    img_No = cv2.getTrackbarPos('Img No', 'Window')
+    curr_img_no = img_No
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    scaledImg= image.copy()
+    cv2.imshow("Window",scaledImg) 
+    pass
 
 def status(*args):
     global img_No, pc, pc_tracked, PH
+    print("Points pre Selected : \n", pc)
+    pw, pc_tracked = observeKeysDict(pc_tracked, pc)
+    pc = []
     print("img_No : ", img_No)
-    print("Points Selected : \n", pc)
     print("Points Tracked : \n", pc_tracked)
+    print("Points Tracked : \n", pw)
 
 def ShowTracked(*args):
     global img_No, image, scaledImg, pc, pc_tracked, PH
-    im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
-    im, pc_tracked = trackedImg(im, PH)
-    print("tracked pc_t : ", pc_tracked)
-    cv2.imshow("Window",im)
+    #im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
+    image, pc = trackedImg(image, PH)
+    #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
+    scaledImg= image.copy()
+    cv2.imshow("Window",scaledImg)
 
-def trackedImg(im, No):
+def trackedImg(image, No, color = (200,100,205)):
     x = torch.load('tracked.pt')
     p = x.cpu().numpy().astype(np.int16)
     for i in range(p.shape[2]):
-        print(p[0][No-1][i,:].tolist())
-        cv2.circle(im, p[0][No-1][i,:].tolist(), 1,(200,100,205), -1)
-    return im, p[0][No-1]
+        cv2.circle(image, p[0][No-1][i,:].tolist(), 1,color, -1)
+    return image, p[0][No-1]
 
 def Track(*args):
-    global img_No, image, scaledImg, pc, PH, No_imgs_in_folder
+    global img_No, image, scaledImg, pc, pc_tracked, PH, No_imgs_in_folder, msg
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    print("pc_tracked before {}: \n".format(pc_tracked.shape[0]),pc_tracked)
+    pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc)
+    print("pc_tracked after {}: \n".format(pc_tracked.shape[0]),pc_tracked)
     PH = 1
-    imN = torch.ones(pc.shape[0]) * (PH-1)
-    quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc)), dim=1)
-    #print(quaries.size())
+    imN = torch.ones(pc_tracked.shape[0]) * (PH-1)
+    quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
+    print(quaries.size())
     torch.save(quaries, 'q.pt')
     if img_No+100 > No_imgs_in_folder:
         img_Tracked = No_imgs_in_folder
@@ -172,12 +196,18 @@ def Track(*args):
        
     subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_Tracked)],shell=True)
     print("Img : ", img_No, " - ", img_No + 100, "  Tracked")
+    markTracked(pc_tracked)
+    pc = []
+    scaledImg= image.copy()
+    cv2.displayStatusBar("Window", "Image No : {:03d}      {:03d}|{:03d}     |  ".format(img_No,0,0)+msg)
+    cv2.imshow("Window",scaledImg)
 
 def Refresh(*args):
-    global img_No, image, scaledImg, pc
+    global img_No, image, scaledImg, pc, pc_tracked
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
     pc = np.array([])
+    pc_tracked  = np.array([])
     cv2.imshow("Window",scaledImg)
 
 def Undo(*args):
@@ -239,14 +269,14 @@ def Save(*args):
     np.savetxt(out_annot+"Hw_Test_{}_gt.txt".format(Test_no),Hws)   
     
 def OpenImgLabel(*args):
-    global img_No, pc, Hws, Hcs, PW
+    global img_No, pc_tracked, Hws, Hcs, PW
     print(pc)
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
     csv = CSV(df)
     PW = csv.Pw
 
     fig = plt.figure(figsize=(6.4,4.8),dpi = 150)
-    Hc, Hw = Epnp2H(PW, pc, K, dist = None)
+    Hc, Hw = Epnp2H(PW, pc_tracked[:,1:3], K, dist = None)
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
