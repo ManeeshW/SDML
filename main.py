@@ -12,17 +12,21 @@ from mlib.plot import *
 from mlib.esti import *
 from mlib.Cat import *
 from newKey import *
+from llib import *
+from llib.Status import *
 
-img_No = 1
 #Input_ImgDir = ImgDir + "input_data/Test_{}/".format(Test_no)
 images = os.listdir(Input_ImgDir)
 No_imgs_in_folder = len(images)
 curr_img_no = 0
 
+img_No = 1
+PH = 1 #prediction horizon
 pc = np.array([])
 pc_tracked = np.array([])
 pcs_added = np.array([])
 rc = np.array([])
+
 catID = 1
 msg = ""
 Hws = np.zeros((No_imgs_in_folder,12))
@@ -37,10 +41,36 @@ Mouse_Move = []
 
 maxScaleUp = 100
 scaleFactor = 0
-#windowName = "Resize Image"
+keyCount = 0
 trackbarValue = "Scale"
 
-PH = 1 #prediction horizon
+
+
+def requiredkeys():
+    df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
+    csv = CSV(df)
+    total = int(csv.requried_keys[0])
+    modified = int(csv.modified_keys[0])
+    return total, modified
+
+def Warning(pc_tracked, Tk, Nk, keyCount, msg):
+    if pc_tracked.shape == (0,):
+       if keyCount < Tk:
+          msg = " Please select {} points".format(Tk - keyCount)
+       elif keyCount == Tk:
+          msg = " Selection Complete"
+       else:
+          msg = " Warning : Over Selected "
+
+    elif Nk > 0:
+      if keyCount < Nk:
+        msg = " Please select {} points".format(Nk - keyCount)
+      elif keyCount == Nk:
+        msg = " Selection Complete"
+      else:
+        msg = " Warning : Over Selected "
+        
+    return msg   
 
 def markPointWin(pc, image,  win = "Window", color = (120,255,50)):
     for i in range(pc.shape[0]):
@@ -63,20 +93,18 @@ def markTracked(pc_tracked):
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global  scaledImg, image, pc, pc_tracked, rc,  curr_img_no, PT, msg
-  
+  global  scaledImg, image, pc, pc_tracked, rc,  curr_img_no, PT, Tk,Nk, msg, keyCount
+
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
   scaleFactor = 1+ scaleValue/100.0
-  
   #cv2.displayOverlay("Window", str(1.34445))
-  cv2.displayStatusBar("Window", "Image No : {:03d}      {:03d}|{:03d}     |  ".format(img_No,int(x/scaleFactor),int(y/scaleFactor))+ msg) 
-
+  
   if action == cv2.EVENT_LBUTTONDOWN:
    pc = cat(pc, [x,y])
+   keyCount = pc.shape[0]
    rc = np.array([])
    markPoint(pc, image)
-   markTracked(pc_tracked)
    scaledImg= image.copy()
    cv2.imshow("Window",scaledImg)
 
@@ -99,6 +127,11 @@ def selectKeyPoints(action, x, y, flags, *userdata):
      cv2.setTrackbarPos('Scale', 'Window', 0)
      cv2.imshow("Window",scaledImg)
 
+  Tk,Nk = requiredkeys()
+  msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+  cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,int(x/scaleFactor),int(y/scaleFactor),Tk,Nk, keyCount)+ msg )
+
+
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def scaleIt(x):
     global scaledImg
@@ -116,7 +149,7 @@ def scaleImage(value=0):
     return scaledImg
     
 def Next(*args):
-    global img_No, image, scaledImg, pc, PH, rc, No_imgs_in_folder, msg
+    global img_No, image, scaledImg, pc, pc_tracked, PH, rc, No_imgs_in_folder, Tk,Nk, msg, keyCount
     img_no = img_No+1
     if img_No < No_imgs_in_folder:
         PH = PH+1
@@ -133,7 +166,9 @@ def Next(*args):
     print("PH: \n", PH)
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.setTrackbarPos('Img No', 'Window', img_No)
-    cv2.displayStatusBar("Window", "Image No : {:03d}      {:03d}|{:03d}     |  ".format(img_No,0,0)+msg)
+    Tk,Nk = requiredkeys()
+    msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
 
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     cv2.circle(image, (200,200), 10,(255,255,0), -1)   
@@ -141,8 +176,6 @@ def Next(*args):
     scaledImg= image.copy()
     cv2.imshow("Window",scaledImg)
     
-
-r = 1
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def imageScroll(x):
     global img_No, image, scaledImg, curr_img_no
@@ -157,7 +190,7 @@ def imageScroll(x):
 def status(*args):
     global img_No, pc, pc_tracked, PH
     print("Points pre Selected : \n", pc)
-    pw, pc_tracked = observeKeysDict(pc_tracked, pc)
+    #pw, pc_tracked = observeKeysDict(pc_tracked, pc)
     pc = []
     print("img_No : ", img_No)
     print("Points Tracked : \n", pc_tracked)
@@ -179,7 +212,7 @@ def trackedImg(image, No, color = (200,100,205)):
     return image, p[0][No-1]
 
 def Track(*args):
-    global img_No, image, scaledImg, pc, pc_tracked, PH, No_imgs_in_folder, msg
+    global img_No, image, scaledImg, pc, pc_tracked, PH, No_imgs_in_folder, Tk,Nk, msg, keyCount
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     print("pc_tracked before {}: \n".format(pc_tracked.shape[0]),pc_tracked)
     pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc)
@@ -199,19 +232,22 @@ def Track(*args):
     markTracked(pc_tracked)
     pc = []
     scaledImg= image.copy()
-    cv2.displayStatusBar("Window", "Image No : {:03d}      {:03d}|{:03d}     |  ".format(img_No,0,0)+msg)
+    Tk,Nk = requiredkeys()
+    msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
 def Refresh(*args):
-    global img_No, image, scaledImg, pc, pc_tracked
+    global img_No, image, scaledImg, pc, pc_tracked, keyCount
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
     pc = np.array([])
     pc_tracked  = np.array([])
+    keyCount = 0
     cv2.imshow("Window",scaledImg)
 
 def Undo(*args):
-    global img_No, image, scaledImg, pc, rc
+    global img_No, image, scaledImg, pc,pc_tracked, rc, Tk,Nk, msg, keyCount
     # print("pc before : ", pc)
     # print("rc before : ", rc)
     try:
@@ -222,14 +258,19 @@ def Undo(*args):
         # print("--------------")
     except:
         pass
+
+    keyCount = pc.shape[0]
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     for i in range(pc.shape[0]):
        cv2.circle(image, (pc[i][0],pc[i][1]) , 1,(255,255,0), -1)
     scaledImg= image.copy()
+    Tk,Nk = requiredkeys()
+    msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
 def Redo(*args):
-    global img_No, image, scaledImg, pc, rc
+    global img_No, image, scaledImg, pc, pc_tracked, rc, Tk, Nk, msg, keyCount
     # print("pc before : ", pc)
     # print("rc before : ", rc)
     try:
@@ -240,14 +281,18 @@ def Redo(*args):
     # print("pc after : ", pc)
     # print("rc after : ", rc)
     # print("------rc--------")
+    keyCount = pc.shape[0]
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     for i in range(pc.shape[0]):
        cv2.circle(image, (pc[i][0],pc[i][1]) , 1,(255,255,0), -1)
     scaledImg= image.copy()
+    Tk,Nk = requiredkeys()
+    msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
 def Back(*args):
-    global img_No, image, scaledImg, pc, PH
+    global img_No, image, scaledImg, pc, pc_tracked, PH, Tk, Nk, msg, keyCount
     img_no = img_No-1
     PH = PH-1
     if img_no < 1:
@@ -260,6 +305,10 @@ def Back(*args):
 
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.setTrackbarPos('Img No', 'Window', img_No)
+    Tk,Nk = requiredkeys()
+    msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+
     cv2.imshow("Window",scaledImg) 
     
 def Save(*args):

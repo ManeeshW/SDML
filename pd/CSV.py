@@ -11,6 +11,8 @@ class CSV:
         self.Pw = p5d[:,1:4]
         self.idx = p5d[:,0]
         self.nidx= nKeysU[nKeysU[:, 1].argsort()][:, 0]
+        self.requried_keys = self.get(df, 'Total')
+        self.modified_keys = self.get(df, 'Modified')
 
     def get_5x1(self, df, label):
         return np.vstack(
