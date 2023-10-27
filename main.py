@@ -133,7 +133,7 @@ def draw_crosshair(x,y,scaledImg, f):
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global  scaledImg, image, pc_selected, pc_tracked, rc,  curr_img_no, PT, Tk, Nk, msg, keyCount
+  global  scaledImg, image, pc_selected, pc_tracked, pcs_added, rc,  curr_img_no, PT, Tk, Nk, msg, keyCount
 
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
@@ -142,6 +142,7 @@ def selectKeyPoints(action, x, y, flags, *userdata):
   
   if action == cv2.EVENT_LBUTTONDOWN:
    pc_selected = cat(pc_selected, [x,y])
+   pcs_added = pc_selected
    keyCount = pc_selected.shape[0]
    rc = np.array([])
    draw_markerSelected(pc_selected, image)
@@ -183,7 +184,7 @@ def scaleImage(value=0):
     return scaledImg
     
 def Next(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, PH, rc, No_imgs_in_folder, Tk,Nk, msg, keyCount
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, rc, No_imgs_in_folder, Tk,Nk, msg, keyCount
     img_no = img_No+1
     if img_No < No_imgs_in_folder:
         PH = PH+1
@@ -198,15 +199,42 @@ def Next(*args):
     pc_selected = np.array([])
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.setTrackbarPos('Img No', 'Window', img_No)
+    
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image, pcs_added = draw_tracked(image, PH)
+    pc_tracked[:,1:3] = pcs_added
+    scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
 
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    image, _ = draw_tracked(image, PH)
-    scaledImg= image.copy()
     cv2.imshow("Window",scaledImg)
+
+def Back(*args):
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, Tk, Nk, msg, keyCount
+    img_no = img_No-1
+    PH = PH-1
+    if img_no < 1:
+       img_No = 1
+    else:
+       img_No = img_no
     
+    scaledImg = image.copy()
+    pc_selected = np.array([])
+    cv2.setTrackbarPos('Scale', 'Window', 0)
+    cv2.setTrackbarPos('Img No', 'Window', img_No)
+
+    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image, pcs_added = draw_tracked(image, PH)
+    pc_tracked[:,1:3] = pcs_added
+    scaledImg= image.copy()
+    Tk,Nk = requiredkeys()
+    msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+
+    cv2.imshow("Window",scaledImg) 
+    
+
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def imageScroll(x):
     global img_No, image, scaledImg, curr_img_no, PT
@@ -226,15 +254,19 @@ def status(*args):
     #print("Points Tracked : \n", pw)
 
 def ShowTracked(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, PH
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH
     #im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
-    image, pc_selected = draw_tracked(image, PH)
+    image, pcs_added = draw_tracked(image, PH)
+    try:
+        pc_tracked[:,1:3] = pcs_added
+    except:
+        pc_selected = pcs_added
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
     scaledImg= image.copy()
     cv2.imshow("Window",scaledImg)
 
 def Track(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, PH, No_imgs_in_folder, Tk,Nk, msg, keyCount
+    global img_No, image, scaledImg, pc_selected, pc_tracked,pcs_added, PH, No_imgs_in_folder, Tk,Nk, msg, keyCount
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     print("pc_tracked before {}: \n".format(pc_tracked.shape[0]),pc_tracked)
     print("pc {}: \n".format(pc_selected.shape[0]),pc_selected)
@@ -252,7 +284,8 @@ def Track(*args):
        
     subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_Tracked)],shell=True)
     print("Img : ", img_No, " - ", img_No + 100, "  Tracked")
-    draw_markerTracked(pc_tracked, image)
+    #draw_markerTracked(pc_tracked, image)
+    image, pcs_added = draw_tracked(image, PH)
     pc_selected = []
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
@@ -317,27 +350,6 @@ def Redo(*args):
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
-def Back(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, PH, Tk, Nk, msg, keyCount
-    img_no = img_No-1
-    PH = PH-1
-    if img_no < 1:
-       img_No = 1
-    else:
-       img_No = img_no
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    image, _ = draw_tracked(image, PH)
-    scaledImg = image.copy()
-    pc_selected = np.array([])
-
-    cv2.setTrackbarPos('Scale', 'Window', 0)
-    cv2.setTrackbarPos('Img No', 'Window', img_No)
-    Tk,Nk = requiredkeys()
-    msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
-
-    cv2.imshow("Window",scaledImg) 
-    
 def Save(*args):
     global img_No, image, pc_selected, Hws, Hcs
     cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
@@ -345,13 +357,13 @@ def Save(*args):
     np.savetxt(out_annot+"Hw_Test_{}_gt.txt".format(Test_no),Hws)   
     
 def OpenImgLabel(*args):
-    global img_No, pc_tracked, Hws, Hcs, PW
+    global img_No, pcs_added, Hws, Hcs, PW
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
     csv = CSV(df)
     PW = csv.Pw
 
     fig = plt.figure(figsize=(6.4,4.8),dpi = 150)
-    Hc, Hw = Epnp2H(PW, pc_tracked[:,1:3], K, dist = None)
+    Hc, Hw = Epnp2H(PW, pcs_added, K, dist = None)
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
