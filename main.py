@@ -44,8 +44,6 @@ scaleFactor = 0
 keyCount = 0
 trackbarValue = "Scale"
 
-
-
 def requiredkeys():
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
     csv = CSV(df)
@@ -239,6 +237,8 @@ def Back(*args):
 def imageScroll(x):
     global img_No, image, scaledImg, curr_img_no, PT
     img_No = cv2.getTrackbarPos('Img No', 'Window')
+    if img_No == 0:
+       img_No = 1
     curr_img_no = img_No
     PT = 1
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
@@ -362,32 +362,37 @@ def OpenImgLabel(*args):
     csv = CSV(df)
     PW = csv.Pw
 
-    fig = plt.figure(figsize=(6.4,4.8),dpi = 150)
+    #fig = plt.figure(figsize=(6.4,4.8),dpi = 150)
     Hc, Hw = Epnp2H(PW, pcs_added, K, dist = None)
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
-    np.savetxt(out_annot+"Hc_Test_{}_gt.txt".format(Test_no),Hcs)
-    np.savetxt(out_annot+"Hw_Test_{}_gt.txt".format(Test_no),Hws)
+    np.savetxt(out_annot+"Hc_label_{}.txt".format(Test_no),Hcs)
+    np.savetxt(out_annot+"Hw_label_{}.txt".format(Test_no),Hws)
 
     global catID
     if catID == 11:
        catID = 1
-    im = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    # im = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     
     box_pc = est_pc(Hc, K, cat_id = catID)
     catID = catID+1
     #plot_box(pc, clr_lines = "green", clr_corners = "red", clr_int_corners = "blue")
-    plot_box(box_pc, clr_lines = "orange", corners = False, int_corners = False, linewidth=1.3,  label = 'TNN-PnP Est. for Real imgs')
-    imshow(im)
-    plt.savefig(out_label+"{:06}.jpg".format(img_No))
-    im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
-    cv2.imshow("Label",im)
+    #plot_box(box_pc, clr_lines = "orange", corners = False, int_corners = False, linewidth=1.3,  label = 'TNN-PnP Est. for Real imgs')
+    #image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    im = image.copy()
+    cv2draw_boxLines(im, box_pc, 1)
+
+    # imshow(im)
+    # plt.savefig(out_label+"{:06}.jpg".format(img_No))
+    # im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
+    cv2.imshow("Window",im)
     cv2.waitKey(5000)  
-    cv2.destroyWindow("Label") 
-    fig.canvas.draw()
-    fig.canvas.flush_events()
+    #cv2.destroyWindow("Label") 
+    im = image.copy()
+    # fig.canvas.draw()
+    # fig.canvas.flush_events()
     catID = 1
 
 # Read Images
@@ -398,7 +403,7 @@ scaledImg= image.copy()
 temp = image.copy()
 # Create a named window
 cv2.namedWindow("Window")
-cv2.namedWindow("Label")
+#cv2.namedWindow("Label")
 # highgui function called when mouse events occur
 cv2.setMouseCallback("Window", selectKeyPoints)
 # Create trackbar and associate a callback function / Attach mouse call back to a window and a method

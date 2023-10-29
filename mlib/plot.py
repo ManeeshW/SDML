@@ -1,4 +1,5 @@
 import os
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from . import pointsOnALine, cat_names
@@ -123,3 +124,12 @@ def plot_cat_key_distribution(cat_names, cat_keys, Dir):
         ax.set_xticks(x, keypoints)
         ax.bar_label(rects1)
         plt.savefig(Dir+"{}_{}_key_dist.png".format(i+1,cat_names[i]))
+
+def cv2draw_boxLines(image, p, thickness = 3, Color = (0,130,255)):
+    for i in range(12):
+        p_L, _, _ = pointsOnALine(p,i)
+        p_L = p_L.astype(int)
+        #for j in range(4):
+        cv2.line(image, p_L[0].tolist(), p_L[1].tolist(), Color, thickness) 
+        cv2.line(image, p_L[1].tolist(), p_L[2].tolist(), Color, thickness) 
+        cv2.line(image, p_L[2].tolist(), p_L[3].tolist(), Color, thickness) 
