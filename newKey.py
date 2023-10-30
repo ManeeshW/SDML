@@ -1,5 +1,5 @@
 import numpy as np
-from mlib.Cat import *
+from MLib.Cat import *
 from config import *
 import pandas as pd
 from pd.CSV import CSV

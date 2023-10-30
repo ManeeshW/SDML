@@ -7,10 +7,10 @@ import subprocess
 import torch
 import pandas as pd
 from pd.CSV import CSV
-from config import *
-from mlib.plot import *
-from mlib.esti import *
-from mlib.Cat import *
+from config.config import *
+from MLib.plot import *
+from MLib.esti import *
+from MLib.Cat import *
 from newKey import *
 #from llib import *
 #from llib.Status import *
@@ -340,7 +340,7 @@ def Redo(*args):
     # print("rc after : ", rc)
     # print("------rc--------")
     keyCount = pc_selected.shape[0]
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(Input_ImgDir + "{:06}.jpg".format(img_No))
 
     draw_markerSelected(pc_selected, image)
 
@@ -353,8 +353,8 @@ def Redo(*args):
 def Save(*args):
     global img_No, image, pc_selected, Hws, Hcs
     cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
-    np.savetxt(out_annot+"Hc_Test_{}_gt.txt".format(Test_no),Hcs)
-    np.savetxt(out_annot+"Hw_Test_{}_gt.txt".format(Test_no),Hws)   
+    np.savetxt(out_annot+"Hc_gt.txt",Hcs)
+    np.savetxt(out_annot+"Hw_gt.txt",Hws)   
     
 def OpenImgLabel(*args):
     global img_No, pcs_added, Hws, Hcs, PW

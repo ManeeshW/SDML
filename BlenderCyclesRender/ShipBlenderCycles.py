@@ -34,14 +34,6 @@ from mylib.moveCamera import *
 from mylib.env import *
 from mylib.pose import Pose
 
-# with open("Output.txt", "w") as text_file:
-#     print(OfflineDir, file=text_file)
-
-#Logfile = open("Log.txt", "w")  # write mode
-Logfile = open(OfflineDir + "Hw_Log.txt", "a")  # append mode
-
-start_time = time.time()
-
 #numbering
 R_i = 0  #Rendering frame number
 S_i = 0 #Different Environment = Scene No
@@ -68,7 +60,7 @@ def main(scene):
     #TRACKER = True
     
     if TRACKER:
-        Hw_track = np.loadtxt(Dir + tracker + "Hw.txt")
+        Hw_track = np.loadtxt(tracker + "Hw_gt.txt")
     
     shift_occlusions()
     rotate_sun()
@@ -93,38 +85,13 @@ def main(scene):
 #            Hw_t[0:3,0:4] =np.reshape(x, (3,4))
 
         elif TRACKER:
-            x  = Hw_track[int(img_no[0]),:]
+            x  = Hw_track[nImg,:]
             Hw_t = np.eye(4)
             Hw_t[0:3,0:4] =np.reshape(x, (3,4))
             rotateCamera(scene,Hw=Hw_t)
         else:
             _, Hw, _, _, _, _ = gbp.get_best_pose()
-            _,Hw_t = rotateCamera(scene,Hw=Hw)
-#            x  = Hw_track[0,:]
-#            Hw_t = np.eye(4)
-#            Hw_t[0:3,0:4] =np.reshape(x, (3,4))
-
-        c = int(img_no[0]+1)
-        Logfile.write("Img No. :")
-        Logfile.write(str(c))
-        Logfile.write("\n")
-        x  = Hw_t[0,:]
-        stringHw=np.array2string(x, formatter={'float_kind':lambda x: "%.4f" % x})
-        Logfile.write(stringHw)
-        Logfile.write("\n")
-        x  = Hw_t[1,:]
-        stringHw=np.array2string(x, formatter={'float_kind':lambda x: "%.4f" % x})
-        Logfile.write(stringHw)
-        Logfile.write("\n")
-        x  = Hw_t[2,:]
-        stringHw=np.array2string(x, formatter={'float_kind':lambda x: "%.4f" % x})
-        Logfile.write(stringHw)
-        Logfile.write("\n")
-        x  = Hw_t[3,:]
-        stringHw=np.array2string(x, formatter={'float_kind':lambda x: "%.4f" % x})
-        Logfile.write(stringHw)
-        Logfile.write("\n")
-        
+            _,Hw_t = rotateCamera(scene,Hw=Hw)        
 
         bpy.context.scene.render.film_transparent = False
         bpy.data.objects["Wave"].hide_render = False
@@ -206,11 +173,5 @@ bpy.context.scene.render.image_settings.compression = 0
 
 bpy.ops.render.render(animation=True,use_viewport = True, write_still=False)
 
-#bpy.ops.render.render(animation=False,use_viewport = True, write_still=False)
-#bpy.ops.render.render(write_still=True)
-#bpy.ops.screen.animation_play()
 
-end_time = time.time()
-fileio.close()
-Logfile.close()  
-print("total time taken this loop: ", end_time - start_time)
+

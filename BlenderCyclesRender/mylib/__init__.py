@@ -6,11 +6,15 @@ from .blenderArg import ArgumentParserForBlender
 
 parser = ArgumentParserForBlender()
 
-parser.add_argument('-sub', type=str, default="",
+parser.add_argument('-tmp', type=str, default="",
+                        help='Number of images want to be generated')
+parser.add_argument('-nImg', type=int, default=1,
+                        help='Number of images want to be generated')
+parser.add_argument('-track', type=str, default="",
                         help='Number of images want to be generated')
 args = parser.parse_args()
-OfflineDir = args.sub
-
+OfflineDir = args.tmp
+nImg = args.nImg - 1
 # with open("Output.txt", "w") as text_file:
 #     print(OfflineDir, file=text_file)
 #os.chdir('../')
@@ -36,9 +40,9 @@ Landingpad = texture_dir + "landingpad/"
 Markings = texture_dir + "markings/"
 
 
-RenDir = OfflineDir + "tmp/" #config.get('Output', 'tmp')
+RenDir = OfflineDir #config.get('Output', 'tmp')
 #OfflineDir = config.get('Output', 'Sub_dir')
-tracker = "Tracker/"
+tracker = args.track
 
 fileio = open(OfflineDir + "DescriptionLog.txt", "a")
 
