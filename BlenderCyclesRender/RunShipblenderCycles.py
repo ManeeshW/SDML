@@ -133,17 +133,22 @@ def renderRandomScenes(N, img_total, Dir, sDir, bimg,  tmp, Track):
     
     # Render synthetic images using blender cycles
     ### !blender -P $enableGPU -noaudio -b $filename -P $code --python-use-system-env -E 'CYCLES' 1> nul
-    call = blender + " -P "+ GPU_fp + " -b "+ blender_fp + " -P "+ Script + " --python-use-system-env  -E 'CYCLES' 1> nul -- -tmp " + tmp + " -nImg {}".format(N) + " -track " + Track
-    os.system(call) 
-    shipImg = cv2.imread(outputFolder + 'tmp/{:06d}.png'.format(1))
-    cv2.imwrite(bimg +'{:06d}'.format(N) + ext ,shipImg) 
-
+    try:
+        call = blender + " -P "+ GPU_fp + " -b "+ blender_fp + " -P "+ Script + " --python-use-system-env  -E 'CYCLES' 1> nul -- -tmp " + tmp + " -nImg {}".format(N) + " -track " + Track
+        os.system(call) 
+    
+        shipImg = cv2.imread(outputFolder + 'tmp/{:06d}.png'.format(1))
+        cv2.imwrite(bimg +'{:06d}'.format(N) + ext ,shipImg) 
+    except:
+        print("Error")
+        pass
+    
     # Maskon = config.getboolean('Mask', 'Maskon')
     # if Maskon:
     #     Tdir = "TrainMask/{:06d}.png".format(N) 
     #     cv2topilconverter(sDir,Tdir)
 
-
+'''
     Hw = np.loadtxt(tmp + "Hw.txt")
     #Hc = np.loadtxt(tmp + "Hc.txt")
 
@@ -158,7 +163,7 @@ def renderRandomScenes(N, img_total, Dir, sDir, bimg,  tmp, Track):
     #Hc_all[N-1,:] = np.reshape(Hc[0:3,0:4], 12)
     np.savetxt(sDir + "Hw_b.txt",Hw_all)
     #np.savetxt(sDir + "Hc_b.txt",Hc_all)
-
+'''
 def timeProp(N, T, disp = True):
     print("Avg, loop time : ", sum(T)/N, "  (", int(3600/(sum(T)/N)), " images/hour )")
     if disp:
