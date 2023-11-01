@@ -326,15 +326,19 @@ def blendTrackBar(*args):
     
 
 def blenderOut(*args):
-    global img_No, image, scaledImg, bImg, factor
+    global img_No, image, scaledImg, bImg, factor, Hws
     image_pil = Image.fromarray(image)
     factor = cv2.getTrackbarPos('Blend', 'Window')
-    Hw = np.loadtxt(out_annot+"Hw_gt.txt".format(Test_no))
+    try:
+        Hws = np.loadtxt(out_annot+"Hw_gt.txt")
+    except:
+        pass
+
     try:
 
         list = os.listdir(out_bimg)
 
-        if np.sum(Hw[img_No-1,:])!=0:
+        if np.sum(Hws[img_No-1,:])!=0:
             if "{:06}.jpg".format(img_No) in list:
                 bImg = cv2.imread(out_bimg + "{:06}.jpg".format(img_No))
             else:
