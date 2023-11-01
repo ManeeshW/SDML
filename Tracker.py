@@ -3,7 +3,7 @@ import numpy as np
 from cotracker.predictor import CoTrackerPredictor
 from cotracker.utils.visualizer import Visualizer, read_video_from_path, read_images_from_path
 import argparse
-from config import *
+from config.config import *
 
 parser = argparse.ArgumentParser(description="Synthetic image generation")
 
