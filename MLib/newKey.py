@@ -18,7 +18,7 @@ def keypointUpdate(idx_t, pc_t, pc_added, csv):
     '''
     idx_curnt = csv.idx
     idx_added = csv.nidx
-    print(idx_curnt,idx_added)
+    #print(idx_curnt,idx_added)
     Pw = csv.Pw
     idx_common = np.intersect1d(idx_t,idx_curnt) # common idx current and previos
     pc_curr_comm = pc_t[np.in1d(idx_t,idx_curnt)]
@@ -46,16 +46,13 @@ def observeKeysDict(pc_prev, pc_newly_added):
     csv = CSV(df)
     msg = ""
     try:
-        print("1")
         pc_updated, Pw = keypointUpdate(pc_prev[:,0], pc_prev[:,1:3], pc_newly_added, csv)
         Pw = csv.Pw
     except:
         try:
-            print("2")
             pc_updated = np.concatenate((np.expand_dims(csv.idx, axis=1),pc_newly_added), axis=1)
             Pw = csv.Pw
         except:
-            print("3")
             print("Selected keypoints are not matched with assignment")
             msg = "Selected keypoints are not matched with assignment"
             Pw = csv.Pw
