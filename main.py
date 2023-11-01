@@ -19,6 +19,7 @@ from MLib.Cat import *
 from MLib.newKey import *
 from MLib.CSV import CSV
 from MLib.misc import *
+from MLib.misc_fucntions import *
 #from llib import *
 #from llib.Status import *
 
@@ -106,7 +107,8 @@ def scaleImage(value=0):
     return scaledImg
     
 def Next(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, rc, No_imgs_in_folder, Tk,Nk, msg, keyCount
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, rc, No_imgs_in_folder, Tk,Nk, msg, keyCount, catID
+    catID = 1
     img_no = img_No+1
     if img_No < No_imgs_in_folder:
         PH = PH+1
@@ -139,7 +141,8 @@ def Next(*args):
     cv2.imshow("Window",scaledImg)
 
 def Back(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, Tk, Nk, msg, keyCount
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, Tk, Nk, msg, keyCount, catID
+    catID = 1
     img_no = img_No-1
     PH = PH-1
     if img_no < 1:
@@ -206,16 +209,16 @@ def Track(*args):
     PH = 1
     imN = torch.ones(pc_tracked.shape[0]) * (PH-1)
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
-    print(quaries.size())
+    #print(quaries.size())
     torch.save(quaries, 'q.pt')
-    H = 100
+    H = 20
     if img_No+H > No_imgs_in_folder:
         img_Tracked = No_imgs_in_folder
     else:
        img_Tracked = img_No+H
        
     subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_Tracked)],shell=True)
-    #msg = ">>>> Img : {} to {}  Tracked <<<<<".format(img_No,img_No+H)
+    msg = ">>>> Img : {} to {}  Tracked <<<<<".format(img_No,img_No+H)
     #draw_markerTracked(pc_tracked, image)
     image, pcs_added = draw_tracked(image, PH)
     pc_selected = []
@@ -224,6 +227,7 @@ def Track(*args):
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
+    msg = ""
 
 
 def Refresh(*args):
@@ -233,13 +237,13 @@ def Refresh(*args):
     pc_selected = np.array([])
     pc_tracked  = np.array([])
     keyCount = 0
-    try:
+
+    if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
         subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
-    except:
-        pass
+
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
-
+    
 def Undo(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, rc, Tk,Nk, msg, keyCount
 
@@ -298,33 +302,56 @@ def OpenImgLabel(*args):
 
     #np.savetxt(out_annot+"Hc_label_{}.txt".format(Test_no),Hcs)
     np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
-    
+
+    if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
+        subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
+
     global catID
     if catID == 11:
        catID = 1
     # im = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     
-    box_pc = est_pc(Hc, K, cat_id = catID)
+    box_pc, axes_pc = est_pc(Hc, K, cat_id = catID)
+    
     catID = catID+1
     #plot_box(pc, clr_lines = "green", clr_corners = "red", clr_int_corners = "blue")
     #plot_box(box_pc, clr_lines = "orange", corners = False, int_corners = False, linewidth=1.3,  label = 'TNN-PnP Est. for Real imgs')
     #image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     im = image.copy()
     cv2draw_boxLines(im, box_pc, 1)
-
+    cv2draw_axes(im, axes_pc, 2, (0,130,255), radius = 4)
     # imshow(im)
     # plt.savefig(out_label+"{:06}.jpg".format(img_No))
     # im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
+    cv2.imwrite(out_label+ "{:06}.jpg".format(img_No), im)
     cv2.imshow("Window",im)
-    cv2.waitKey(5000)  
+    cv2.waitKey(2000)  
     im = image.copy()
     catID = 1
 
-def blendTrackBar(*args):
-    global factor
+def ShowPrev(*args):
+    global img_No, image, pc_selected, catID, rc, Tk, Nk, msg, keyCount, msg
+    try:
+        Hws = np.loadtxt(out_annot+"Hw_gt.txt")
+        Hw_row = Hws[img_No-1,:]
+        Hw = Hw_row.reshape(3,4)
+        Hc = Hw2Hc(Hw)
+        box_pc, axes_pc = est_pc(Hc, K, cat_id = catID)
+        catID = catID+1
+        im = image.copy()
+        cv2draw_boxLines(im, box_pc, 1, (0,255,0))
+        cv2draw_axes(im, axes_pc, 2, (0,130,255), radius = 4)
+        cv2.imshow("Window",im)
+        cv2.waitKey(500)  
+        im = image.copy()
+        catID = 1
+    except:
+        msg = "[[[[There is no tracked keypoints]]]]"
+        cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+        cv2.imshow("Window",image)
+    #np.savetxt(out_annot+"Hw_gt_saved.txt",Hws)   
     
-
 def blenderOut(*args):
     global img_No, image, scaledImg, bImg, factor, Hws
     image_pil = Image.fromarray(image)
@@ -335,23 +362,19 @@ def blenderOut(*args):
         pass
 
     try:
-
         list = os.listdir(out_bimg)
 
         if np.sum(Hws[img_No-1,:])!=0:
-            if "{:06}.jpg".format(img_No) in list:
+            if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
                 bImg = cv2.imread(out_bimg + "{:06}.jpg".format(img_No))
             else:
-                bImg = np.zeros_like(image)
                 subprocess.check_output(["python3 BlenderCyclesRender/RunShipblenderCycles.py -N {}".format(img_No)],shell=True)
                 bImg = cv2.imread(out_bimg + "{:06}.jpg".format(img_No))
         else:
             factor = 90
             bImg = np.zeros_like(image)
-            try:
+            if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
                 subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
-            except:
-                pass
         #bImg_pil = Image.fromarray(bImg)
     except:
         bImg = np.zeros_like(image)
@@ -396,6 +419,7 @@ cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Img-Label",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("ShowPrev",ShowPrev,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
 

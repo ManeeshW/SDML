@@ -133,3 +133,10 @@ def cv2draw_boxLines(image, p, thickness = 3, Color = (0,130,255)):
         cv2.line(image, p_L[0].tolist(), p_L[1].tolist(), Color, thickness) 
         cv2.line(image, p_L[1].tolist(), p_L[2].tolist(), Color, thickness) 
         cv2.line(image, p_L[2].tolist(), p_L[3].tolist(), Color, thickness) 
+
+def cv2draw_axes(image, pc, thickness = 2, Color = (0,130,255), radius = 3):
+    p = pc.astype(int)
+    cv2.line(image, p[0].tolist(), p[1].tolist(), (255,0,0), thickness) 
+    cv2.line(image, p[0].tolist(), p[3].tolist(), (0,255,0), thickness) 
+    cv2.line(image, p[0].tolist(), p[5].tolist(), (0,0,255), thickness) 
+    cv2.circle(image, p[0].tolist(), radius, (155,255,0), thickness)

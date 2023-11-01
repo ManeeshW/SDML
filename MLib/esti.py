@@ -20,4 +20,4 @@ def Epnp2H(PW, Pc, K, dist = None):
 def est_pc(Hc, K, cat_id = 1):
     P = cat_points(cat_id=cat_id)
     Pc, Pc_C, Pc_I, Pc_axis, Pc_shifted_axis = projectedKnown3dBoxPoints(P, Hc,K,points_only = 0)
-    return Pc
+    return Pc, Pc_axis
