@@ -1,17 +1,24 @@
-import cv2
+# Author: Maneesha Wickramasuriya
+# Company: Flight Dynamics and Control Lab (FDCL)
+# License: This code is free to use, modify, and distribute as long as credit and citation are given to the first author and FDCL.
+
 import os
+from PIL import Image
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import imshow
 import subprocess
 import torch
 import pandas as pd
-from pd.CSV import CSV
+
 from config.config import *
 from MLib.plot import *
 from MLib.esti import *
 from MLib.Cat import *
 from MLib.newKey import *
+from MLib.CSV import CSV
+from MLib.misc import *
 #from llib import *
 #from llib.Status import *
 
@@ -43,91 +50,8 @@ maxScaleUp = 100
 scaleFactor = 0
 keyCount = 0
 trackbarValue = "Scale"
-
-def requiredkeys():
-    df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
-    csv = CSV(df)
-    total = int(csv.requried_keys[0])
-    modified = int(csv.modified_keys[0])
-    return total, modified
-
-def Warning(pc_tracked, Tk, Nk, keyCount, msg):
-    if pc_tracked.shape == (0,):
-       if keyCount < Tk:
-          msg = " Please select {} points".format(Tk - keyCount)
-       elif keyCount == Tk:
-          msg = " Selection Complete"
-       else:
-          msg = " Warning : Over Selected \n"
-
-    elif Nk > 0:
-      if keyCount < Nk:
-        msg = " Please select {} points".format(Nk - keyCount)
-      elif keyCount == Nk:
-        msg = " Selection Complete"
-      else:
-        msg = " Warning : Over Selected "
-        
-    return msg   
-
-def markPointWin(pc, image,  win = "Window", color = (120,255,50)):
-    for i in range(pc.shape[0]):
-       cv2.circle(image, (pc[i][0],pc[i][1]) , 1,color, -1)
-    scaledImg= image.copy()
-    cv2.imshow(win,scaledImg)
-    return scaledImg
-
-def markPoint(pc, image, color = (120,255,50), color2 = (120,255,50)):
-    for i in range(pc.shape[0]):
-       cv2.circle(image, (pc[i][0],pc[i][1]) , 0, (0,0,0), -1)
-       cv2.circle(image, (pc[i][0]-1,pc[i][1]), 0, color, -1)
-       cv2.circle(image, (pc[i][0]+1,pc[i][1]), 0, color, -1)
-       cv2.circle(image, (pc[i][0],pc[i][1]+1), 0, color, -1)
-       cv2.circle(image, (pc[i][0],pc[i][1]-1), 0, color, -1)
-       cv2.circle(image, (pc[i][0]-1,pc[i][1]-1), 0, color2, -1)
-       cv2.circle(image, (pc[i][0]+1,pc[i][1]+1), 0, color2, -1)
-       cv2.circle(image, (pc[i][0]-1,pc[i][1]+1), 0, color2, -1)
-       cv2.circle(image, (pc[i][0]+1,pc[i][1]-1), 0, color2, -1)
-
-def draw_markerTracked(pc_tracked, image):
-    try:
-       markPoint(pc_tracked[:,1:3], image, (0,120,255), (0,120,185))
-    except:
-       pass
-
-def draw_markerSelected(pc_selected, image):
-    try:
-       markPoint(pc_selected, image, (120,255,50),(120,185,50))
-    except:
-       pass
-
-def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
-    x = torch.load('tracked.pt')
-    p = x.cpu().numpy().astype(np.int16)
-    for i in range(p.shape[2]):
-        (x,y) = p[0][No-1][i,:].tolist()
-        cv2.circle(image, (x,y) , 0, (0,0,0), -1)
-        cv2.circle(image, (x-1,y), 0, color, -1)
-        cv2.circle(image, (x+1,y), 0, color, -1)
-        cv2.circle(image, (x,y+1), 0, color, -1)
-        cv2.circle(image, (x,y-1), 0, color, -1)
-        cv2.circle(image, (x-1,y-1), 0, color2, -1)
-        cv2.circle(image, (x+1,y+1), 0, color2, -1)
-        cv2.circle(image, (x-1,y+1), 0, color2, -1)
-        cv2.circle(image, (x+1,y-1), 0, color2, -1)
-
-    return image, p[0][No-1]
-
-def draw_crosshair(x,y,scaledImg, f):
-   cv2.line(scaledImg, (x-3,y),(x-8-f,y), (0,20,255), 1)
-   cv2.line(scaledImg, (x+3,y),(x+8+f,y), (0,20,255), 1)
-   cv2.line(scaledImg, (x,y-3),(x,y-8-f), (0,20,255), 1)
-   cv2.line(scaledImg, (x,y+3),(x,y+8+f), (0,20,255), 1)
-   cv2.circle(scaledImg, (x-1,y), 0, (0,0,0), -1)
-   cv2.circle(scaledImg, (x+1,y), 0, (0,0,0), -1)
-   cv2.circle(scaledImg, (x,y+1), 0, (0,0,0), -1)
-   cv2.circle(scaledImg, (x,y-1), 0, (0,0,0), -1)
-      
+factor = 0.5
+    
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
@@ -199,8 +123,14 @@ def Next(*args):
     cv2.setTrackbarPos('Img No', 'Window', img_No)
     
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    image, pcs_added = draw_tracked(image, PH)
-    pc_tracked[:,1:3] = pcs_added
+    try:
+        image, pcs_added = draw_tracked(image, PH)
+    except:
+        print("There is no keypoints to draw")
+    try:
+        pc_tracked[:,1:3] = pcs_added
+    except:
+        pass
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
@@ -256,7 +186,11 @@ def status(*args):
 def ShowTracked(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH
     #im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
-    image, pcs_added = draw_tracked(image, PH)
+    try:
+        image, pcs_added = draw_tracked(image, PH)
+    except:
+        print("There is no tracked keypoints to show")
+
     try:
         pc_tracked[:,1:3] = pcs_added
     except:
@@ -274,13 +208,14 @@ def Track(*args):
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
     print(quaries.size())
     torch.save(quaries, 'q.pt')
-    if img_No+100 > No_imgs_in_folder:
+    H = 100
+    if img_No+H > No_imgs_in_folder:
         img_Tracked = No_imgs_in_folder
     else:
-       img_Tracked = img_No+100
+       img_Tracked = img_No+H
        
     subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_Tracked)],shell=True)
-    print("Img : ", img_No, " - ", img_No + 100, "  Tracked")
+    #msg = ">>>> Img : {} to {}  Tracked <<<<<".format(img_No,img_No+H)
     #draw_markerTracked(pc_tracked, image)
     image, pcs_added = draw_tracked(image, PH)
     pc_selected = []
@@ -290,6 +225,7 @@ def Track(*args):
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
+
 def Refresh(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, Tk,Nk, msg, keyCount
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
@@ -297,19 +233,19 @@ def Refresh(*args):
     pc_selected = np.array([])
     pc_tracked  = np.array([])
     keyCount = 0
+    try:
+        subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
+    except:
+        pass
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
 def Undo(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, rc, Tk,Nk, msg, keyCount
-    # print("pc before : ", pc)
-    # print("rc before : ", rc)
+
     try:
         rc = cat(rc, pc_selected[-1])
         pc_selected = pc_selected[:-1]
-        # print("pc after : ", pc)
-        # print("rc after : ", rc)
-        # print("--------------")
     except:
         pass
 
@@ -326,16 +262,12 @@ def Undo(*args):
 
 def Redo(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, rc, Tk, Nk, msg, keyCount
-    # print("pc before : ", pc)
-    # print("rc before : ", rc)
     try:
         pc_selected = cat(pc_selected,rc[-1])
         rc = rc[:-1]
     except:
         pass
-    # print("pc after : ", pc)11
-    # print("rc after : ", rc)
-    # print("------rc--------")
+
     keyCount = pc_selected.shape[0]
     image = cv2.imread(Input_ImgDir + "{:06}.jpg".format(img_No))
 
@@ -366,7 +298,7 @@ def OpenImgLabel(*args):
 
     #np.savetxt(out_annot+"Hc_label_{}.txt".format(Test_no),Hcs)
     np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
-
+    
     global catID
     if catID == 11:
        catID = 1
@@ -386,11 +318,54 @@ def OpenImgLabel(*args):
     # im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
     cv2.imshow("Window",im)
     cv2.waitKey(5000)  
-    #cv2.destroyWindow("Label") 
     im = image.copy()
-    # fig.canvas.draw()
-    # fig.canvas.flush_events()
     catID = 1
+
+def blendTrackBar(*args):
+    global factor
+    
+
+def blenderOut(*args):
+    global img_No, image, scaledImg, bImg, factor
+    image_pil = Image.fromarray(image)
+    factor = cv2.getTrackbarPos('Blend', 'Window')
+    Hw = np.loadtxt(out_annot+"Hw_gt.txt".format(Test_no))
+    try:
+
+        list = os.listdir(out_bimg)
+
+        if np.sum(Hw[img_No-1,:])!=0:
+            if "{:06}.jpg".format(img_No) in list:
+                bImg = cv2.imread(out_bimg + "{:06}.jpg".format(img_No))
+            else:
+                bImg = np.zeros_like(image)
+                subprocess.check_output(["python3 BlenderCyclesRender/RunShipblenderCycles.py -N {}".format(img_No)],shell=True)
+                bImg = cv2.imread(out_bimg + "{:06}.jpg".format(img_No))
+        else:
+            factor = 90
+            bImg = np.zeros_like(image)
+            try:
+                subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
+            except:
+                pass
+        #bImg_pil = Image.fromarray(bImg)
+    except:
+        bImg = np.zeros_like(image)
+
+        #bImg_pil = Image.fromarray(bImg)
+
+    bImg_pil = Image.fromarray(bImg)
+    #x = cv2.getTrackbarPos('Blend', 'Window')
+    blend_image = Image.blend(image_pil,bImg_pil,factor/100)
+    #grey = cv2.cvtColor(sImg, cv2.COLOR_RGB2GRAY)
+    # Make the grey scale image have three channels
+    #grey_3_channel = cv2.cvtColor(grey, cv2.COLOR_GRAY2BGR)
+    bimage = np.asarray(blend_image)
+    sImg = np.hstack((image, bimage))
+    cv2.imshow("Window",sImg)
+    cv2.imwrite(out_comp+ "{:06}.jpg".format(img_No), bimage)
+
+    sImg = scaledImg 
 
 # Read Images
 image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
@@ -418,10 +393,13 @@ cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Img-Label",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
 
 # Create trackbar and associate a callback function / create trackbars Named Radius with the range of 150 and starting position of 5.
 cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
 cv2.createTrackbar('Img No', 'Window', 1, No_imgs_in_folder, imageScroll) 
+cv2.createTrackbar('Blend', 'Window', 50, 100, blenderOut) 
+
 # Create trackbar and associate a callback function
 #cv2.createTrackbar(trackbarValue, windowName, scaleFactor, maxScaleUp, scaleImage)
 
