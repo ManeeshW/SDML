@@ -1,13 +1,9 @@
 #!/bin/bash
-SUBNAME="2"
+SUBNAME=1
 
-loops=2
+loops=73
 for i in `seq 1 $loops`
 do
-    echo "No $i"
-    echo "Start generating dataset"
-    python3 BlenderCyclesRender/RunShipblenderCycles.py -N 2 --ss $SUBNAME
+    python3 BlenderCyclesRender/RunShipblenderCycles.py -N $i 
 #    python3 BlenderCyclesRender/time.py
 done
-
-
