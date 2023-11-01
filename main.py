@@ -11,7 +11,7 @@ from config.config import *
 from MLib.plot import *
 from MLib.esti import *
 from MLib.Cat import *
-from newKey import *
+from MLib.newKey import *
 #from llib import *
 #from llib.Status import *
 
@@ -268,10 +268,7 @@ def ShowTracked(*args):
 def Track(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked,pcs_added, PH, No_imgs_in_folder, Tk,Nk, msg, keyCount
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    print("pc_tracked before {}: \n".format(pc_tracked.shape[0]),pc_tracked)
-    print("pc {}: \n".format(pc_selected.shape[0]),pc_selected)
     pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc_selected)
-    print("pc_tracked after {}: \n".format(pc_tracked.shape[0]),pc_tracked)
     PH = 1
     imN = torch.ones(pc_tracked.shape[0]) * (PH-1)
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
@@ -353,8 +350,8 @@ def Redo(*args):
 def Save(*args):
     global img_No, image, pc_selected, Hws, Hcs
     cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
-    np.savetxt(out_annot+"Hc_gt.txt",Hcs)
-    np.savetxt(out_annot+"Hw_gt.txt",Hws)   
+    #np.savetxt(out_annot+"Hc_gt.txt",Hcs)
+    np.savetxt(out_annot+"Hw_gt_saved.txt",Hws)   
     
 def OpenImgLabel(*args):
     global img_No, pcs_added, Hws, Hcs, PW
@@ -367,8 +364,8 @@ def OpenImgLabel(*args):
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
-    np.savetxt(out_annot+"Hc_label_{}.txt".format(Test_no),Hcs)
-    np.savetxt(out_annot+"Hw_label_{}.txt".format(Test_no),Hws)
+    #np.savetxt(out_annot+"Hc_label_{}.txt".format(Test_no),Hcs)
+    np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
 
     global catID
     if catID == 11:
