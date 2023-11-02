@@ -17,6 +17,7 @@ out_label = outputFolder+"label/"
 out_annot = outputFolder+"Annotations/"
 out_bimg = outputFolder+"bimg/"
 out_comp = outputFolder+"comparison/"
+out_keys = outputFolder+"keypoints/"
 
 try:
    os.mkdir(outputFolder)
@@ -48,4 +49,8 @@ try:
 except:
    pass
 
+try:
+   os.mkdir(out_keys)
+except:
+   pass
 

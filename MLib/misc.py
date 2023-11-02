@@ -86,6 +86,22 @@ def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
 
     return image, p[0][No-1]
 
+def draw_saved(image, No, pc_path, color = (40,40,255), color2 = (0,30,255)):
+    p = np.loadtxt(pc_path+"Pc_{}.txt".format(No)).astype(np.int16)
+    for i in range(p.shape[0]):
+        (x,y) = p[i,:].tolist()
+        cv2.circle(image, (x,y) , 0, (0,0,0), -1)
+        cv2.circle(image, (x-1,y), 0, color, -1)
+        cv2.circle(image, (x+1,y), 0, color, -1)
+        cv2.circle(image, (x,y+1), 0, color, -1)
+        cv2.circle(image, (x,y-1), 0, color, -1)
+        cv2.circle(image, (x-1,y-1), 0, color2, -1)
+        cv2.circle(image, (x+1,y+1), 0, color2, -1)
+        cv2.circle(image, (x-1,y+1), 0, color2, -1)
+        cv2.circle(image, (x+1,y-1), 0, color2, -1)
+
+    return image, p
+
 def draw_crosshair(x,y,scaledImg, f):
    cv2.line(scaledImg, (x-3,y),(x-8-f,y), (0,20,255), 1)
    cv2.line(scaledImg, (x+3,y),(x+8+f,y), (0,20,255), 1)

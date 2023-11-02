@@ -125,10 +125,15 @@ def Next(*args):
     cv2.setTrackbarPos('Img No', 'Window', img_No)
     
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+
     try:
-        image, pcs_added = draw_tracked(image, PH)
+        try:
+            image, pcs_added = draw_tracked(image, PH)
+        except:
+            image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
-        print("There is no keypoints to draw")
+            print("There is no tracked or saved keypoints to selected")
+
     try:
         pc_tracked[:,1:3] = pcs_added
     except:
@@ -156,8 +161,20 @@ def Back(*args):
     cv2.setTrackbarPos('Img No', 'Window', img_No)
 
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    image, pcs_added = draw_tracked(image, PH)
-    pc_tracked[:,1:3] = pcs_added
+
+    try:
+        try:
+            image, pcs_added = draw_tracked(image, PH)
+        except:
+            image, pcs_added = draw_saved(image, img_No, out_keys)
+    except:
+            print("There is no tracked or saved keypoints to selected")
+
+    try:
+        pc_tracked[:,1:3] = pcs_added
+    except:
+        pass
+
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
@@ -189,15 +206,36 @@ def status(*args):
 def ShowTracked(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH
     #im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
+
     try:
-        image, pcs_added = draw_tracked(image, PH)
+        try:
+            image, pcs_added = draw_tracked(image, PH)
+        except:
+            image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
-        print("There is no tracked keypoints to show")
+            print("There is no tracked or saved keypoints to show")
 
     try:
         pc_tracked[:,1:3] = pcs_added
     except:
         pc_selected = pcs_added
+    #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
+    scaledImg= image.copy()
+    cv2.imshow("Window",scaledImg)
+
+def retrieveSaved(*args):
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH
+
+    try:
+        image, pcs_added = draw_saved(image, img_No, out_keys)
+    except:
+        print("There is no tracked or saved keypoints to show")
+
+    try:
+        pc_tracked[:,1:3] = pcs_added
+    except:
+        pc_selected = pcs_added
+
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
     scaledImg= image.copy()
     cv2.imshow("Window",scaledImg)
@@ -230,7 +268,7 @@ def Track(*args):
     msg = ""
 
 
-def Refresh(*args):
+def Reset(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, Tk,Nk, msg, keyCount
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
@@ -300,7 +338,7 @@ def OpenImgLabel(*args):
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
-    #np.savetxt(out_annot+"Hc_label_{}.txt".format(Test_no),Hcs)
+    np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added)
     np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
 
     if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
@@ -412,11 +450,13 @@ cv2.setMouseCallback("Window", selectKeyPoints)
 cv2.createButton("<-Back",Back,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Status",status,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Refresh",Refresh,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Reset",Reset,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Undo",Undo,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
 
 cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("PrevSaved",retrieveSaved,None,cv2.QT_PUSH_BUTTON,1)
+
 cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Img-Label",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("ShowPrev",ShowPrev,None,cv2.QT_PUSH_BUTTON,1)
