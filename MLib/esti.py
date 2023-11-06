@@ -4,8 +4,17 @@ from .misc_fucntions import *
 from . import *
 
 def Epnp2H(PW, Pc, K, dist = None):
-    Pw = PW[:Pc.shape[0],:]
-    _, Rvec, Tvec = cv2.solvePnP(Pw.astype(float), Pc.astype(float), K, distCoeffs=dist, flags=cv2.SOLVEPNP_EPNP)
+    try:
+        Pw = PW
+        _, Rvec, Tvec = cv2.solvePnP(Pw.astype(float), Pc.astype(float), K, distCoeffs=dist, flags=cv2.SOLVEPNP_EPNP)
+    except:
+        print("pc and pw are not matched. try touse same number of 2d keypoints as for 3d keypoints")
+        try:
+            Pw = PW[:Pc.shape[0],:]
+            _, Rvec, Tvec = cv2.solvePnP(Pw.astype(float), Pc.astype(float), K, distCoeffs=dist, flags=cv2.SOLVEPNP_EPNP)
+        except:
+            print("pc and pw are not matched please select corresponding keypoints")
+
     T = Tvec
     R, _ = cv2.Rodrigues(Rvec)
     h_pnp = np.concatenate((R,T),axis = 1)

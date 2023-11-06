@@ -22,11 +22,11 @@ def requiredkeys():
 def Warning(pc_tracked, Tk, Nk, keyCount, msg):
     if pc_tracked.shape == (0,):
        if keyCount < Tk:
-          msg = " Please select {} points".format(Tk - keyCount)
+          msg = "   Please select {} points".format(Tk - keyCount)
        elif keyCount == Tk:
-          msg = " Selection Complete"
+          msg = "   Selection Complete"
        else:
-          msg = " Warning : Over Selected \n"
+          msg = "   Warning : Over Selected \n"
 
     elif Nk > 0:
       if keyCount < Nk:

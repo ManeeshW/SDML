@@ -56,7 +56,7 @@ factor = 0.5
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global  scaledImg, image, pc_selected, pc_tracked, pcs_added, rc,  curr_img_no, PT, Tk, Nk, msg, keyCount
+  global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, PT, Tk, Nk, msg, keyCount
 
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
@@ -67,7 +67,6 @@ def selectKeyPoints(action, x, y, flags, *userdata):
    pc_selected = cat(pc_selected, [x,y])
    pcs_added = pc_selected
    keyCount = pc_selected.shape[0]
-   rc = np.array([])
    draw_markerSelected(pc_selected, image)
    scaledImg= image.copy()
    cv2.imshow("Window",scaledImg)
@@ -85,6 +84,7 @@ def selectKeyPoints(action, x, y, flags, *userdata):
      cv2.imshow("Window",scaledImg)
 
   Tk,Nk = requiredkeys()
+  keyCount = pc_selected.shape[0]
   msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
   
   cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,int(x/scaleFactor),int(y/scaleFactor),Tk,Nk, keyCount)+ msg )
@@ -197,7 +197,7 @@ def imageScroll(x):
 
 def status(*args):
     global img_No, pc_selected, pc_tracked, PH
-    print("Points pre Selected : \n", pc_selected)
+    print("Points pre Selected : \n", pc_selected.shape)
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc)
     print("img_No : ", img_No)
     print("Points Tracked : \n", pc_tracked)
@@ -225,21 +225,30 @@ def ShowTracked(*args):
 
 def retrieveSaved(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, PW
-    pc_tracked = np.loadtxt(out_keys+"Pct_{}.txt".format(img_No)).astype(np.int16)
-    pcs_added = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
-    print(pc_tracked[:,0])
+
+    pc_selected = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
+    # try:
+    #     pc_t= np.loadtxt(out_keys+"Pct_{}.txt".format(img_No)).astype(np.int16)
+    #     print(pc_t[:,0])
+    # except:
+    #     pass
+
+    pc_tracked = np.array([])
+    # pcs_added = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
+    
     try:
-        image, pcs_added = draw_saved(image, pc_tracked[:, 1:3])
+        im, pcs_added = draw_saved(image, pc_selected)
     except:
         print("There is no tracked or saved keypoints to show")
 
     try:
         pc_tracked[:,1:3] = pc_tracked
     except:
-        pc_selected = pc_tracked
+        pass
+
 
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
-    scaledImg= image.copy()
+    scaledImg= im.copy()
     cv2.imshow("Window",scaledImg)
 
 def Track(*args):
@@ -248,7 +257,10 @@ def Track(*args):
     pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc_selected)
     PH = 1
     imN = torch.ones(pc_tracked.shape[0]) * (PH-1)
+    print(pc_tracked.shape)
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
+    # except:
+    #quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_selected)), dim=1)
     #print(quaries.size())
     torch.save(quaries, 'q.pt')
     H = 50
@@ -261,7 +273,7 @@ def Track(*args):
     msg = ">>>> Img : {} to {}  Tracked <<<<<".format(img_No,img_No+H)
     #draw_markerTracked(pc_tracked, image)
     image, pcs_added = draw_tracked(image, PH)
-    pc_selected = []
+    pc_selected = np.array([])
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
@@ -328,30 +340,29 @@ def Redo(*args):
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
-def Save(*args):
-    global img_No, image, pc_selected, Hws, Hcs
-    cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
-    #np.savetxt(out_annot+"Hc_gt.txt",Hcs)
-    np.savetxt(out_annot+"Hw_gt_saved.txt",Hws)   
+# def Save(*args):
+#     global img_No, image, pc_selected, Hws, Hcs
+#     cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
+#     #np.savetxt(out_annot+"Hc_gt.txt",Hcs)
+#     np.savetxt(out_annot+"Hw_gt_saved.txt",Hws)   
     
 def OpenImgLabel(*args):
-    global img_No, pcs_added, pc_tracked, Hws, Hcs, PW
+    global img_No, pc_selected, pcs_added, pc_tracked, Hws, Hcs, PW
 
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
     csv = CSV(df)
     PW = csv.Pw
-
     #fig = plt.figure(figsize=(6.4,4.8),dpi = 150)
     Hc, Hw = Epnp2H(PW, pcs_added, K, dist = None)
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
     np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
 
-    np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added, fmt='%.1e')
+    np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added)
     np.savetxt(out_keys+"Pct_{}.txt".format(img_No),pc_tracked)
     np.savetxt(out_keys+"PW_{}.txt".format(img_No),PW)
-    
-    cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
+
+    df.to_excel(out_keys+"pw_{}.xlsx".format(img_No))
 
     if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
         subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
@@ -374,6 +385,7 @@ def OpenImgLabel(*args):
     # imshow(im)
     # plt.savefig(out_label+"{:06}.jpg".format(img_No))
     # im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
+    cv2.imwrite(out_img+'/{}.png'.format(img_No), im)
     cv2.imwrite(out_label+ "{:06}.jpg".format(img_No), im)
     cv2.imshow("Window",im)
     cv2.waitKey(2000)  
@@ -470,9 +482,9 @@ cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("PrevSaved",retrieveSaved,None,cv2.QT_PUSH_BUTTON,1)
 
 cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Img-Label",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Label-Img",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("ShowPrev",ShowPrev,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
+#v2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
 
 # Create trackbar and associate a callback function / create trackbars Named Radius with the range of 150 and starting position of 5.
