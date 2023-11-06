@@ -328,7 +328,7 @@ def Save(*args):
     np.savetxt(out_annot+"Hw_gt_saved.txt",Hws)   
     
 def OpenImgLabel(*args):
-    global img_No, pcs_added, Hws, Hcs, PW
+    global img_No, pcs_added, pc_tracked, Hws, Hcs, PW
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
     csv = CSV(df)
     PW = csv.Pw
@@ -339,6 +339,8 @@ def OpenImgLabel(*args):
     Hws[img_No-1,:] = Hw.reshape(1,12)
 
     np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added)
+    np.savetxt(out_keys+"Pct_{}.txt".format(img_No),pc_tracked)
+    np.savetxt(out_keys+"PW_{}.txt".format(img_No),pcs_added)
     np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
 
     if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
