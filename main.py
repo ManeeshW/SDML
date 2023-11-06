@@ -224,17 +224,19 @@ def ShowTracked(*args):
     cv2.imshow("Window",scaledImg)
 
 def retrieveSaved(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH
-
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, PW
+    pc_tracked = np.loadtxt(out_keys+"Pct_{}.txt".format(img_No)).astype(np.int16)
+    pcs_added = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
+    print(pc_tracked[:,0])
     try:
-        image, pcs_added = draw_saved(image, img_No, out_keys)
+        image, pcs_added = draw_saved(image, pc_tracked[:, 1:3])
     except:
         print("There is no tracked or saved keypoints to show")
 
     try:
-        pc_tracked[:,1:3] = pcs_added
+        pc_tracked[:,1:3] = pc_tracked
     except:
-        pc_selected = pcs_added
+        pc_selected = pc_tracked
 
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
     scaledImg= image.copy()
@@ -269,7 +271,12 @@ def Track(*args):
 
 
 def Reset(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, Tk,Nk, msg, keyCount
+    global img_No, image, scaledImg, pc_selected, pc_tracked, Tk,Nk, msg, keyCount, PW
+
+    df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
+    csv = CSV(df)
+    PW = csv.Pw
+
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
     pc_selected = np.array([])
@@ -329,6 +336,7 @@ def Save(*args):
     
 def OpenImgLabel(*args):
     global img_No, pcs_added, pc_tracked, Hws, Hcs, PW
+
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
     csv = CSV(df)
     PW = csv.Pw
@@ -337,11 +345,13 @@ def OpenImgLabel(*args):
     Hc, Hw = Epnp2H(PW, pcs_added, K, dist = None)
     Hcs[img_No-1,:] = Hc.reshape(1,12)
     Hws[img_No-1,:] = Hw.reshape(1,12)
-
-    np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added)
-    np.savetxt(out_keys+"Pct_{}.txt".format(img_No),pc_tracked)
-    np.savetxt(out_keys+"PW_{}.txt".format(img_No),pcs_added)
     np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
+
+    np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added, fmt='%.1e')
+    np.savetxt(out_keys+"Pct_{}.txt".format(img_No),pc_tracked)
+    np.savetxt(out_keys+"PW_{}.txt".format(img_No),PW)
+    
+    cv2.imwrite(out_img+'/{}.png'.format(img_No), image)
 
     if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
         subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
