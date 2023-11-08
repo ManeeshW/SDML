@@ -69,7 +69,7 @@ def draw_markerSelected(pc_selected, image):
     except:
        pass
 
-def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
+def draw_tracked_(image, No, color = (0,120,255), color2 = (0,120,185)):
     x = torch.load('tracked/tracked.pt')
     p = x.cpu().numpy().astype(np.int16)
     for i in range(p.shape[2]):
@@ -85,6 +85,28 @@ def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
         cv2.circle(image, (x+1,y-1), 0, color2, -1)
 
     return image, p[0][No-1]
+
+def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
+    trackedDict = torch.load('tracked/tracked_Dict.pt')
+    p = trackedDict["img{}".format(No)]
+    if p != np.array([]):
+        print(p)
+        for i in range(p.shape[0]):
+            (x,y) = p[i].tolist()
+            cv2.circle(image, (x,y) , 0, (0,0,0), -1)
+            cv2.circle(image, (x-1,y), 0, color, -1)
+            cv2.circle(image, (x+1,y), 0, color, -1)
+            cv2.circle(image, (x,y+1), 0, color, -1)
+            cv2.circle(image, (x,y-1), 0, color, -1)
+            cv2.circle(image, (x-1,y-1), 0, color2, -1)
+            cv2.circle(image, (x+1,y+1), 0, color2, -1)
+            cv2.circle(image, (x-1,y+1), 0, color2, -1)
+            cv2.circle(image, (x+1,y-1), 0, color2, -1)
+    else:
+       print("no tracked history")
+       p = np.array([])
+
+    return image, p
 
 def draw_saved(image, p, color = (40,40,255), color2 = (0,30,255)):
     
