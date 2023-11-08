@@ -12,7 +12,7 @@ import subprocess
 import torch
 import pandas as pd
 
-from config.config import *
+from MLib.config import *
 from MLib.plot import *
 from MLib.esti import *
 from MLib.Cat import *
@@ -178,7 +178,7 @@ def Back(*args):
 
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def imageScroll(x):
-    global img_No, image, scaledImg, curr_img_no, pcs_added
+    global img_No, image, scaledImg, curr_img_no, pcs_added, pc_selected, pc_tracked
     img_No = cv2.getTrackbarPos('Img No', 'Window')
     if img_No == 0:
        img_No = 1
@@ -208,7 +208,7 @@ def status(*args):
     #print("Points Tracked : \n", pw)
 
 def ShowTracked(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added
     #im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
 
     try:
@@ -226,27 +226,18 @@ def ShowTracked(*args):
     cv2.imshow("Window",scaledImg)
 
 def retrieveSaved(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, PW
-
-    pc_selected = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
-    # try:
-    #     pc_t= np.loadtxt(out_keys+"Pct_{}.txt".format(img_No)).astype(np.int16)
-    #     print(pc_t[:,0])
-    # except:
-    #     pass
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PW
+    try:
+        pc_selected = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
+    except:
+        print("There is no tracked or saved keypoints to show")
 
     pc_tracked = np.array([])
-    # pcs_added = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
-    
+
     try:
         im, pcs_added = draw_saved(image, pc_selected)
     except:
         print("There is no tracked or saved keypoints to show")
-
-    try:
-        pc_tracked[:,1:3] = pc_tracked
-    except:
-        pass
 
 
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
@@ -254,16 +245,16 @@ def retrieveSaved(*args):
     cv2.imshow("Window",scaledImg)
 
 def Track(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked,pcs_added, PH, No_imgs_in_folder, Tk,Nk, msg, keyCount
+    global img_No, image, scaledImg, pc_selected, pc_tracked,pcs_added, No_imgs_in_folder, Tk,Nk, msg, keyCount
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc_selected)
-    PH = 1
+
     imN = torch.zeros(pc_tracked.shape[0]) 
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
     # except:
     #quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_selected)), dim=1)
     #print(quaries.size())
-    torch.save(quaries, 'tracked/q.pt')
+    torch.save(quaries, track_dir + 'q.pt')
     H = 50
     if img_No+H > No_imgs_in_folder:
         img_Tracked = No_imgs_in_folder
@@ -464,7 +455,7 @@ scaledImg= image.copy()
 # Make a temporary image, will be useful to clear the drawing
 temp = image.copy()
 # Create a named window
-cv2.namedWindow("Window")
+cv2.namedWindow("Window", flags=cv2.WINDOW_GUI_EXPANDED)
 #cv2.namedWindow("Label")
 # highgui function called when mouse events occur
 cv2.setMouseCallback("Window", selectKeyPoints)
@@ -492,7 +483,7 @@ cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
 
 # Create trackbar and associate a callback function / create trackbars Named Radius with the range of 150 and starting position of 5.
-cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
+#cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
 cv2.createTrackbar('Img No', 'Window', 1, No_imgs_in_folder, imageScroll) 
 cv2.createTrackbar('Blend', 'Window', 50, 100, blenderOut) 
 

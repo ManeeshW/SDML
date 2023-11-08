@@ -11,6 +11,7 @@ from .plot import *
 from .esti import *
 from .Cat import *
 from .newKey import *
+from .config import *
 
 def requiredkeys():
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
@@ -70,7 +71,7 @@ def draw_markerSelected(pc_selected, image):
        pass
 
 def draw_tracked_(image, No, color = (0,120,255), color2 = (0,120,185)):
-    x = torch.load('tracked/tracked.pt')
+    x = torch.load(track_dir + 'tracked.pt')
     p = x.cpu().numpy().astype(np.int16)
     for i in range(p.shape[2]):
         (x,y) = p[0][No-1][i,:].tolist()
@@ -87,7 +88,7 @@ def draw_tracked_(image, No, color = (0,120,255), color2 = (0,120,185)):
     return image, p[0][No-1]
 
 def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
-    trackedDict = torch.load('tracked/tracked_Dict.pt')
+    trackedDict = torch.load(track_dir + 'tracked_Dict.pt')
     p = trackedDict["img{}".format(No)]
     if p != np.array([]):
         for i in range(p.shape[0]):

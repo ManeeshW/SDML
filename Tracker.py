@@ -3,7 +3,7 @@ import numpy as np
 from cotracker.predictor import CoTrackerPredictor
 from cotracker.utils.visualizer import Visualizer, read_video_from_path, read_images_from_path
 import argparse
-from config.config import *
+from MLib.config import *
 
 parser = argparse.ArgumentParser(description="Synthetic image generation")
 
@@ -20,18 +20,12 @@ args = parser.parse_args()
 N = args.N
 S = args.S
 T = args.T
-#N = 20
+
 def mode(S, N, T):
     video = read_images_from_path(Input_ImgDir, S, N)
     video = torch.from_numpy(video).permute(0, 3, 1, 2)[None].float()
-    # queries = torch.tensor([
-    #     [0., 400., 350.],  # point tracked from the first frame
-    #     [10., 600., 500.], # frame number 10
-    #     [20., 750., 600.], # ...
-    #     [30., 900., 200.]
-    # ])
-    # print(queries.size())
-    queries = torch.load('tracked/q.pt')
+
+    queries = torch.load(track_dir + 'q.pt')
     model = CoTrackerPredictor(checkpoint='cotracker/ckpt/cotracker_stride_4_wind_8.pth')
 
     if torch.cuda.is_available():
@@ -41,10 +35,8 @@ def mode(S, N, T):
 
     pred_tracks, pred_visibility = model(video, queries=queries.unsqueeze(0))
 
-    torch.save(pred_tracks, 'tracked/tracked.pt')
-
     try:
-        trackedDict = torch.load('tracked/tracked_Dict.pt')
+        trackedDict = torch.load(track_dir + 'tracked_Dict.pt')
     except:
         trackedDict = {}
         trackedDict.update({"img{}".format(i+1) : np.array([]) for i in range(T)})
@@ -52,6 +44,6 @@ def mode(S, N, T):
     for i in range(pred_tracks.size()[1]):
         trackedDict["img{}".format(S+i)] = pred_tracks[0,i,:,:].cpu().numpy().astype(np.int16)
 
-    torch.save(trackedDict,'tracked/tracked_Dict.pt')
+    torch.save(trackedDict,track_dir + 'tracked_Dict.pt')
 
 mode(S, N, T)

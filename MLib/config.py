@@ -18,6 +18,7 @@ out_annot = outputFolder+"Annotations/"
 out_bimg = outputFolder+"bimg/"
 out_comp = outputFolder+"comparison/"
 out_keys = outputFolder+"keypoints/"
+track_dir = outputFolder+"tracked/"
 
 try:
    os.mkdir(outputFolder)
@@ -51,6 +52,11 @@ except:
 
 try:
    os.mkdir(out_keys)
+except:
+   pass
+
+try:
+   os.mkdir(track_dir)
 except:
    pass
 
