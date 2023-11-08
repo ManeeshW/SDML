@@ -262,7 +262,7 @@ def Track(*args):
     # except:
     #quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_selected)), dim=1)
     #print(quaries.size())
-    torch.save(quaries, 'q.pt')
+    torch.save(quaries, 'tracked/q.pt')
     H = 50
     if img_No+H > No_imgs_in_folder:
         img_Tracked = No_imgs_in_folder

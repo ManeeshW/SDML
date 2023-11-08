@@ -37,6 +37,6 @@ def mode(S, N):
 
     pred_tracks, pred_visibility = model(video, queries=queries.unsqueeze(0))
     print(pred_tracks.size())
-    torch.save(pred_tracks, 'tracked.pt')
+    torch.save(pred_tracks, 'tracked/tracked.pt')
     
 mode(S, N)
