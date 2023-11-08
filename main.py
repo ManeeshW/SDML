@@ -29,11 +29,10 @@ No_imgs_in_folder = len(images)
 curr_img_no = 0
 
 img_No = 1
-PH = 1 #prediction horizon
 pc_selected = np.array([])
 pc_tracked = np.array([])
 pcs_added = np.array([])
-rc = np.array([])
+rc = np.array([]) #undo redo
 
 catID = 1
 msg = ""
@@ -107,11 +106,9 @@ def scaleImage(value=0):
     return scaledImg
     
 def Next(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, rc, No_imgs_in_folder, Tk,Nk, msg, keyCount, catID
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, No_imgs_in_folder, Tk,Nk, msg, keyCount, catID
     catID = 1
     img_no = img_No+1
-    if img_No < No_imgs_in_folder:
-        PH = PH+1
     if img_no <= No_imgs_in_folder:
        img_No = img_no
     else:
@@ -135,7 +132,8 @@ def Next(*args):
     try:
         pc_tracked[:,1:3] = pcs_added
     except:
-        pass
+        pc_selected = pcs_added
+
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
@@ -147,7 +145,6 @@ def Back(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PH, Tk, Nk, msg, keyCount, catID
     catID = 1
     img_no = img_No-1
-    PH = PH-1
     if img_no < 1:
        img_No = 1
     else:
@@ -169,7 +166,7 @@ def Back(*args):
     try:
         pc_tracked[:,1:3] = pcs_added
     except:
-        pass
+        pc_selected = pcs_added
 
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
@@ -181,13 +178,24 @@ def Back(*args):
 
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def imageScroll(x):
-    global img_No, image, scaledImg, curr_img_no, PT
+    global img_No, image, scaledImg, curr_img_no, pcs_added
     img_No = cv2.getTrackbarPos('Img No', 'Window')
     if img_No == 0:
        img_No = 1
     curr_img_no = img_No
-    PT = 1
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+
+    try:
+        image, pcs_added = draw_tracked(image, img_No)
+        #image, pcs_added = draw_saved(image, img_No, out_keys)
+    except:
+        print("There is no tracked or saved keypoints to selected")
+
+    try:
+        pc_tracked[:,1:3] = pcs_added
+    except:
+        pc_selected = pcs_added
+
     scaledImg= image.copy()
     cv2.imshow("Window",scaledImg) 
 
@@ -250,7 +258,7 @@ def Track(*args):
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
     pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc_selected)
     PH = 1
-    imN = torch.ones(pc_tracked.shape[0]) * (PH-1)
+    imN = torch.zeros(pc_tracked.shape[0]) 
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
     # except:
     #quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_selected)), dim=1)
@@ -386,7 +394,7 @@ def OpenImgLabel(*args):
     catID = 1
 
 def ShowPrev(*args):
-    global img_No, image, pc_selected, catID, rc, Tk, Nk, msg, keyCount, msg
+    global img_No, image, pc_selected, catID, Tk, Nk, msg, keyCount, msg
     try:
         Hws = np.loadtxt(out_annot+"Hw_gt.txt")
         Hw_row = Hws[img_No-1,:]
