@@ -70,7 +70,7 @@ def draw_markerSelected(pc_selected, image):
        pass
 
 def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
-    x = torch.load('tracked.pt')
+    x = torch.load('tracked/tracked.pt')
     p = x.cpu().numpy().astype(np.int16)
     for i in range(p.shape[2]):
         (x,y) = p[0][No-1][i,:].tolist()
