@@ -90,7 +90,6 @@ def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
     trackedDict = torch.load('tracked/tracked_Dict.pt')
     p = trackedDict["img{}".format(No)]
     if p != np.array([]):
-        print(p)
         for i in range(p.shape[0]):
             (x,y) = p[i].tolist()
             cv2.circle(image, (x,y) , 0, (0,0,0), -1)
@@ -103,7 +102,7 @@ def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
             cv2.circle(image, (x-1,y+1), 0, color2, -1)
             cv2.circle(image, (x+1,y-1), 0, color2, -1)
     else:
-       print("no tracked history")
+       print("Img No: {} There is no tracked keypoints history".format(No))
        p = np.array([])
 
     return image, p
