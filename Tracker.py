@@ -47,7 +47,7 @@ def mode(S, N, T):
         trackedDict = torch.load('tracked/tracked_Dict.pt')
     except:
         trackedDict = {}
-        trackedDict.update({"img{}".format(i+1) : False for i in range(T)})
+        trackedDict.update({"img{}".format(i+1) : np.array([]) for i in range(T)})
 
     for i in range(pred_tracks.size()[1]):
         trackedDict["img{}".format(S+i)] = pred_tracks[0,i,:,:].cpu().numpy().astype(np.int16)
