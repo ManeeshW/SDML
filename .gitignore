@@ -5,7 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
-
+nul
+.~lock.pw.xlsx#
 # Distribution / packaging
 .Python
 build/
