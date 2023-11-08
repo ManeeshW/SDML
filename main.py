@@ -127,12 +127,10 @@ def Next(*args):
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
 
     try:
-        try:
-            image, pcs_added = draw_tracked(image, PH)
-        except:
-            image, pcs_added = draw_saved(image, img_No, out_keys)
+        image, pcs_added = draw_tracked(image, img_No)
+        #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
-            print("There is no tracked or saved keypoints to selected")
+        print("There is no tracked or saved keypoints to selected")
 
     try:
         pc_tracked[:,1:3] = pcs_added
@@ -163,12 +161,10 @@ def Back(*args):
     image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
 
     try:
-        try:
-            image, pcs_added = draw_tracked(image, PH)
-        except:
-            image, pcs_added = draw_saved(image, img_No, out_keys)
+        image, pcs_added = draw_tracked(image, img_No)
+        #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
-            print("There is no tracked or saved keypoints to selected")
+        print("There is no tracked or saved keypoints to selected")
 
     try:
         pc_tracked[:,1:3] = pcs_added
@@ -208,12 +204,10 @@ def ShowTracked(*args):
     #im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
 
     try:
-        try:
-            image, pcs_added = draw_tracked(image, PH)
-        except:
-            image, pcs_added = draw_saved(image, img_No, out_keys)
+        image, pcs_added = draw_tracked(image, img_No)
+        #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
-            print("There is no tracked or saved keypoints to show")
+        print("There is no tracked or saved keypoints to show")
 
     try:
         pc_tracked[:,1:3] = pcs_added
@@ -257,7 +251,6 @@ def Track(*args):
     pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc_selected)
     PH = 1
     imN = torch.ones(pc_tracked.shape[0]) * (PH-1)
-    print(pc_tracked.shape)
     quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_tracked[:,1:3])), dim=1)
     # except:
     #quaries = torch.cat((imN.unsqueeze(1),torch.from_numpy(pc_selected)), dim=1)
@@ -269,10 +262,10 @@ def Track(*args):
     else:
        img_Tracked = img_No+H
        
-    subprocess.check_output(["python3 Tracker.py -S {} -N {}".format(img_No, img_Tracked)],shell=True)
+    subprocess.check_output(["python3 Tracker.py -S {} -N {} -T {}".format(img_No, img_Tracked, No_imgs_in_folder)],shell=True)
     msg = ">>>> Img : {} to {}  Tracked <<<<<".format(img_No,img_No+H)
     #draw_markerTracked(pc_tracked, image)
-    image, pcs_added = draw_tracked(image, PH)
+    image, pcs_added = draw_tracked(image, img_No)
     pc_selected = np.array([])
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
@@ -472,20 +465,23 @@ cv2.setMouseCallback("Window", selectKeyPoints)
 # cv2.createButton("Window",back)
 
 cv2.createButton("<-Back",Back,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
+
 cv2.createButton("Status",status,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Reset",Reset,None,cv2.QT_PUSH_BUTTON,1)
+
+
+
+cv2.createButton("Prev-Selected-keys",retrieveSaved,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Undo",Undo,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
-
 cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("PrevSaved",retrieveSaved,None,cv2.QT_PUSH_BUTTON,1)
-
+cv2.createButton("Prev-Label",ShowPrev,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Label-Img",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("ShowPrev",ShowPrev,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton(">> Label-Img <<",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
+
 #v2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
+cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
 
 # Create trackbar and associate a callback function / create trackbars Named Radius with the range of 150 and starting position of 5.
 cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
