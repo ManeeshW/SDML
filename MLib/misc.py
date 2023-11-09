@@ -12,6 +12,7 @@ from .esti import *
 from .Cat import *
 from .newKey import *
 from .config import *
+from .status import *
 
 def requiredkeys():
     df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
@@ -102,11 +103,12 @@ def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
             cv2.circle(image, (x+1,y+1), 0, color2, -1)
             cv2.circle(image, (x-1,y+1), 0, color2, -1)
             cv2.circle(image, (x+1,y-1), 0, color2, -1)
+        msg = GOOD + "{} Keypoints are in Tracked History   ".format(p.shape[0])
     else:
-       print("Img No: {} There is no tracked keypoints history".format(No))
+       msg = ERROR + "!!!!!!    There is no tracked keypoints history   !!!!!!"
        p = np.array([])
 
-    return image, p
+    return image, p, msg
 
 def draw_saved(image, p, color = (40,40,255), color2 = (0,30,255)):
     
