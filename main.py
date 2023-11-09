@@ -82,7 +82,7 @@ def selectKeyPoints(action, x, y, flags, *userdata):
      cv2.setTrackbarPos('Scale', 'Window', 0)
      cv2.imshow("Window",scaledImg)
 
-  Tk,Nk = requiredkeys()
+  Tk, Nk = requiredkeys() # NK - New Keypoints, TK - Total Keypoints
   keyCount = pc_selected.shape[0]
   msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
   statusbar(msg, int(x/scaleFactor),int(y/scaleFactor))
@@ -121,13 +121,13 @@ def Next(*args):
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.setTrackbarPos('Img No', 'Window', img_No)
     
-    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR + "{:06}.jpg".format(img_No))
 
     try:
         image, pcs_added, msg = draw_tracked(image, img_No)
         #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
-        print("There is no tracked or saved keypoints to selected")
+        msg = WARNING + " There is no tracked or saved keypoints to selected"
 
     try:
         pc_tracked[:,1:3] = pcs_added
@@ -137,8 +137,8 @@ def Next(*args):
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
-
+    #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    statusbar(msg)
     cv2.imshow("Window",scaledImg)
 
 def Back(*args):
@@ -161,7 +161,7 @@ def Back(*args):
         image, pcs_added, msg = draw_tracked(image, img_No)
         #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
-        print("There is no tracked or saved keypoints to selected")
+        msg = WARNING + " There is no tracked or saved keypoints to selected"
 
     try:
         pc_tracked[:,1:3] = pcs_added
@@ -171,8 +171,8 @@ def Back(*args):
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
-
+    #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    statusbar(msg)
     cv2.imshow("Window",scaledImg) 
     
 
@@ -224,6 +224,7 @@ def ShowTracked(*args):
         pc_selected = pcs_added
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
     scaledImg= image.copy()
+    statusbar(msg)
     cv2.imshow("Window",scaledImg)
 
 def retrieveSaved(*args):
@@ -271,7 +272,8 @@ def Track(*args):
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    statusbar(msg)
     cv2.imshow("Window",scaledImg)
     msg = ""
 
@@ -292,7 +294,8 @@ def Reset(*args):
     if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
         subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
 
-    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    statusbar(msg)
     cv2.imshow("Window",scaledImg)
     
 def Undo(*args):
@@ -312,7 +315,8 @@ def Undo(*args):
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    statusbar(msg)
     cv2.imshow("Window",scaledImg)
 
 def Redo(*args):
@@ -332,7 +336,8 @@ def Redo(*args):
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
     
-    cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+    statusbar(msg)
     cv2.imshow("Window",scaledImg)
 
 # def Save(*args):
@@ -389,14 +394,14 @@ def OpenImgLabel(*args):
         catID = 1
 
     except:
-        statusbar("     !!!!! pc size and pw size are not matched   !!!!!   >>>>  Please select image keypoints correspond to 3d keypoints   <<<<")
+        statusbar(ERROR + "     !!!!! pc size and pw size are not matched   !!!!!   >>>>  Please select image keypoints correspond to 3d keypoints   <<<<")
 
     
 
 def ShowPrev(*args):
     global img_No, image, pc_selected, catID, Tk, Nk, msg, keyCount, msg
     try:
-        Hws = np.loadtxt(out_annot+"Hw_gt.txt")
+        Hws = np.loadtxt(out_annot_test+"Hw.txt")
         Hw_row = Hws[img_No-1,:]
         Hw = Hw_row.reshape(3,4)
         Hc = Hw2Hc(Hw)
@@ -410,8 +415,9 @@ def ShowPrev(*args):
         im = image.copy()
         catID = 1
     except:
-        msg = "!!!! There is no tracked keypoints !!!!"
-        cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+        msg = WARNING + "!!!! There is no tracked keypoints !!!!"
+        #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
+        statusbar(msg)
         cv2.imshow("Window",image)
     #np.savetxt(out_annot+"Hw_gt_saved.txt",Hws)   
     
