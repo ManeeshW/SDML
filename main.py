@@ -19,12 +19,12 @@ from MLib.Cat import *
 from MLib.newKey import *
 from MLib.CSV import CSV
 from MLib.misc import *
+from MLib.rename import *
 from MLib.misc_fucntions import *
-#from llib import *
-#from llib.Status import *
+from MLib.status import *
 
-#Input_ImgDir = ImgDir + "input_data/Test_{}/".format(Test_no)
-images = os.listdir(Input_ImgDir)
+
+images = os.listdir(INPUT_IMG_DIR)
 No_imgs_in_folder = len(images)
 curr_img_no = 0
 
@@ -85,8 +85,8 @@ def selectKeyPoints(action, x, y, flags, *userdata):
   Tk,Nk = requiredkeys()
   keyCount = pc_selected.shape[0]
   msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-  
-  cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,int(x/scaleFactor),int(y/scaleFactor),Tk,Nk, keyCount)+ msg )
+  statusbar(msg, int(x/scaleFactor),int(y/scaleFactor))
+  #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,int(x/scaleFactor),int(y/scaleFactor),Tk,Nk, keyCount)+ msg )
 
 
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
@@ -114,17 +114,17 @@ def Next(*args):
     else:
        img_No = No_imgs_in_folder
     #cv2.circle(image, (200,200), 10,(255,255,0), -1) 
-    #image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    #image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
     #
     scaledImg= image.copy()
     pc_selected = np.array([])
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.setTrackbarPos('Img No', 'Window', img_No)
     
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
 
     try:
-        image, pcs_added = draw_tracked(image, img_No)
+        image, pcs_added, msg = draw_tracked(image, img_No)
         #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
         print("There is no tracked or saved keypoints to selected")
@@ -155,10 +155,10 @@ def Back(*args):
     cv2.setTrackbarPos('Scale', 'Window', 0)
     cv2.setTrackbarPos('Img No', 'Window', img_No)
 
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
 
     try:
-        image, pcs_added = draw_tracked(image, img_No)
+        image, pcs_added, msg = draw_tracked(image, img_No)
         #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
         print("There is no tracked or saved keypoints to selected")
@@ -178,15 +178,15 @@ def Back(*args):
 
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def imageScroll(x):
-    global img_No, image, scaledImg, curr_img_no, pcs_added, pc_selected, pc_tracked
+    global img_No, image, scaledImg, curr_img_no, pcs_added, pc_selected, pc_tracked, msg
     img_No = cv2.getTrackbarPos('Img No', 'Window')
     if img_No == 0:
        img_No = 1
     curr_img_no = img_No
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
 
     try:
-        image, pcs_added = draw_tracked(image, img_No)
+        image, pcs_added, msg = draw_tracked(image, img_No)
         #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
         print("There is no tracked or saved keypoints to selected")
@@ -197,6 +197,7 @@ def imageScroll(x):
         pc_selected = pcs_added
 
     scaledImg= image.copy()
+    statusbar(msg)
     cv2.imshow("Window",scaledImg) 
 
 def status(*args):
@@ -208,11 +209,11 @@ def status(*args):
     #print("Points Tracked : \n", pw)
 
 def ShowTracked(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, msg
     #im =  cv2.imread("/home/maneesh/Desktop/LAB2.0/my_Git/E_Test_6_2023.06.26/{:06}.jpg".format(img_No), 1)
 
     try:
-        image, pcs_added = draw_tracked(image, img_No)
+        image, pcs_added, msg = draw_tracked(image, img_No)
         #image, pcs_added = draw_saved(image, img_No, out_keys)
     except:
         print("There is no tracked or saved keypoints to show")
@@ -226,27 +227,28 @@ def ShowTracked(*args):
     cv2.imshow("Window",scaledImg)
 
 def retrieveSaved(*args):
-    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PW
+    global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, PW, msg
     try:
         pc_selected = np.loadtxt(out_keys+"Pc_{}.txt".format(img_No)).astype(np.int16)
     except:
-        print("There is no tracked or saved keypoints to show")
+        msg = NOKEYS
 
     pc_tracked = np.array([])
 
     try:
         im, pcs_added = draw_saved(image, pc_selected)
     except:
-        print("There is no tracked or saved keypoints to show")
+        msg = NOKEYS
 
 
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc_cotracked)
     scaledImg= im.copy()
+    statusbar(msg)
     cv2.imshow("Window",scaledImg)
 
 def Track(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked,pcs_added, No_imgs_in_folder, Tk,Nk, msg, keyCount
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
     pw, pc_tracked, msg = observeKeysDict(pc_tracked, pc_selected)
 
     imN = torch.zeros(pc_tracked.shape[0]) 
@@ -264,7 +266,7 @@ def Track(*args):
     subprocess.check_output(["python3 Tracker.py -S {} -N {} -T {}".format(img_No, img_Tracked, No_imgs_in_folder)],shell=True)
     msg = ">>>> Img : {} to {}  Tracked <<<<<".format(img_No,img_No+H)
     #draw_markerTracked(pc_tracked, image)
-    image, pcs_added = draw_tracked(image, img_No)
+    image, pcs_added, msg = draw_tracked(image, img_No)
     pc_selected = np.array([])
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
@@ -281,7 +283,7 @@ def Reset(*args):
     csv = CSV(df)
     PW = csv.Pw
 
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
     scaledImg= image.copy()
     pc_selected = np.array([])
     pc_tracked  = np.array([])
@@ -303,7 +305,7 @@ def Undo(*args):
         pass
 
     keyCount = pc_selected.shape[0]
-    image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
 
     draw_markerSelected(pc_selected, image)
 
@@ -322,13 +324,14 @@ def Redo(*args):
         pass
 
     keyCount = pc_selected.shape[0]
-    image = cv2.imread(Input_ImgDir + "{:06}.jpg".format(img_No))
+    image = cv2.imread(INPUT_IMG_DIR + "{:06}.jpg".format(img_No))
 
     draw_markerSelected(pc_selected, image)
 
     scaledImg= image.copy()
     Tk,Nk = requiredkeys()
     msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
+    
     cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
     cv2.imshow("Window",scaledImg)
 
@@ -345,44 +348,50 @@ def OpenImgLabel(*args):
     csv = CSV(df)
     PW = csv.Pw
     #fig = plt.figure(figsize=(6.4,4.8),dpi = 150)
-    Hc, Hw = Epnp2H(PW, pcs_added, K, dist = None)
-    Hcs[img_No-1,:] = Hc.reshape(1,12)
-    Hws[img_No-1,:] = Hw.reshape(1,12)
-    np.savetxt(out_annot+"Hw_gt.txt".format(Test_no),Hws)
+    try:
+        Hc, Hw = Epnp2H(PW, pcs_added, K, dist = None)
+        Hcs[img_No-1,:] = Hc.reshape(1,12)
+        Hws[img_No-1,:] = Hw.reshape(1,12)
+        np.savetxt(out_annot_test+"Hw.txt",Hws)
+        np.savetxt(out_annot_test+"Hc.txt",Hcs)
+        np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added)
+        np.savetxt(out_keys+"Pct_{}.txt".format(img_No),pc_tracked)
+        np.savetxt(out_keys+"PW_{}.txt".format(img_No),PW)
 
-    np.savetxt(out_keys+"Pc_{}.txt".format(img_No),pcs_added)
-    np.savetxt(out_keys+"Pct_{}.txt".format(img_No),pc_tracked)
-    np.savetxt(out_keys+"PW_{}.txt".format(img_No),PW)
+        df.to_excel(out_keys+"pw_{}.xlsx".format(img_No))
 
-    df.to_excel(out_keys+"pw_{}.xlsx".format(img_No))
+        if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
+            subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
 
-    if "{:06}.jpg".format(img_No) in os.listdir(out_bimg):
-        subprocess.check_output(["rm "+out_bimg+"{:06}.jpg".format(img_No)],shell=True)
+        global catID
+        if catID == 11:
+            catID = 1
+        # im = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
+        # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
-    global catID
-    if catID == 11:
-       catID = 1
-    # im = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        box_pc, axes_pc = est_pc(Hc, K, cat_id = catID)
+
+        catID = catID+1
+        #plot_box(pc, clr_lines = "green", clr_corners = "red", clr_int_corners = "blue")
+        #plot_box(box_pc, clr_lines = "orange", corners = False, int_corners = False, linewidth=1.3,  label = 'TNN-PnP Est. for Real imgs')
+        #image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
+        im = image.copy()
+        cv2draw_boxLines(im, box_pc, 1)
+        cv2draw_axes(im, axes_pc, 2, (0,130,255), radius = 4)
+        # imshow(im)
+        # plt.savefig(out_label+"{:06}.jpg".format(img_No))
+        # im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
+        cv2.imwrite(out_img+"{:06}.jpg".format(img_No), im)
+        #cv2.imwrite(out_label+ "{:06}.jpg".format(img_No), im)
+        cv2.imshow("Window",im)
+        cv2.waitKey(2000)  
+        im = image.copy()
+        catID = 1
+
+    except:
+        statusbar("     !!!!! pc size and pw size are not matched   !!!!!   >>>>  Please select image keypoints correspond to 3d keypoints   <<<<")
+
     
-    box_pc, axes_pc = est_pc(Hc, K, cat_id = catID)
-    
-    catID = catID+1
-    #plot_box(pc, clr_lines = "green", clr_corners = "red", clr_int_corners = "blue")
-    #plot_box(box_pc, clr_lines = "orange", corners = False, int_corners = False, linewidth=1.3,  label = 'TNN-PnP Est. for Real imgs')
-    #image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
-    im = image.copy()
-    cv2draw_boxLines(im, box_pc, 1)
-    cv2draw_axes(im, axes_pc, 2, (0,130,255), radius = 4)
-    # imshow(im)
-    # plt.savefig(out_label+"{:06}.jpg".format(img_No))
-    # im = cv2.imread(out_label+"{:06}.jpg".format(img_No))
-    cv2.imwrite(out_img+'/{}.png'.format(img_No), im)
-    cv2.imwrite(out_label+ "{:06}.jpg".format(img_No), im)
-    cv2.imshow("Window",im)
-    cv2.waitKey(2000)  
-    im = image.copy()
-    catID = 1
 
 def ShowPrev(*args):
     global img_No, image, pc_selected, catID, Tk, Nk, msg, keyCount, msg
@@ -401,7 +410,7 @@ def ShowPrev(*args):
         im = image.copy()
         catID = 1
     except:
-        msg = "[[[[There is no tracked keypoints]]]]"
+        msg = "!!!! There is no tracked keypoints !!!!"
         cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,0,0,Tk,Nk, keyCount)+ msg) 
         cv2.imshow("Window",image)
     #np.savetxt(out_annot+"Hw_gt_saved.txt",Hws)   
@@ -448,9 +457,20 @@ def blenderOut(*args):
 
     sImg = scaledImg 
 
-# Read Images
-image = cv2.imread(Input_ImgDir+ "{:06}.jpg".format(img_No))
+def statusbar(msg, x=0,y=0):
+    global img_No
+    Tk,Nk = requiredkeys()
+    status_1 = "Img No. {:03d} [{:03d},{:03d}]  ".format(img_No,x,y)
+    status_2 = "| Keys [Tot. : {:02d} | New : {:02d} | Selected : {:02d}]".format(Tk, Nk, keyCount)
+    cv2.displayStatusBar("Window", status_1 + status_2 + msg) 
 
+
+# Rename and Load Data by refering to config.ini
+print("loading Data ...")
+rename(REAL_IMG_DIR,INPUT_IMG)
+
+# Read Images
+image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
 scaledImg= image.copy()
 # Make a temporary image, will be useful to clear the drawing
 temp = image.copy()
@@ -468,8 +488,6 @@ cv2.createButton("<-Back",Back,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Status",status,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Reset",Reset,None,cv2.QT_PUSH_BUTTON,1)
 
-
-
 cv2.createButton("Prev-Selected-keys",retrieveSaved,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Undo",Undo,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
@@ -483,7 +501,7 @@ cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
 cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
 
 # Create trackbar and associate a callback function / create trackbars Named Radius with the range of 150 and starting position of 5.
-#cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
+cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
 cv2.createTrackbar('Img No', 'Window', 1, No_imgs_in_folder, imageScroll) 
 cv2.createTrackbar('Blend', 'Window', 50, 100, blenderOut) 
 
