@@ -473,7 +473,8 @@ def statusbar(msg, x=0,y=0):
 
 # Rename and Load Data by refering to config.ini
 print("loading Data ...")
-rename(REAL_IMG_DIR,INPUT_IMG)
+rename(REAL_IMG_DIR,INPUT_IMG_DIR)
+
 
 # Read Images
 image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
