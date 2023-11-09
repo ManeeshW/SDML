@@ -22,7 +22,7 @@ S = args.S
 T = args.T
 
 def mode(S, N, T):
-    video = read_images_from_path(Input_ImgDir, S, N)
+    video = read_images_from_path(INPUT_IMG_DIR, S, N)
     video = torch.from_numpy(video).permute(0, 3, 1, 2)[None].float()
 
     queries = torch.load(track_dir + 'q.pt')
