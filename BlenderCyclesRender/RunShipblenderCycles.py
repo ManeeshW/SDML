@@ -121,7 +121,7 @@ def num_of_img_files_in_folder(idir):
     number_files = len(list)
     return number_files
 
-def renderRandomScenes(N, img_total, Dir, sDir, bimg,  tmp, Track):
+def renderRandomScenes(N, Dir, bimg,  tmp, Track):
     
     #sDir = config.get('Output', 'Sub_dir')
     ext = '.jpg'
@@ -137,7 +137,7 @@ def renderRandomScenes(N, img_total, Dir, sDir, bimg,  tmp, Track):
         call = blender + " -P "+ GPU_fp + " -b "+ blender_fp + " -P "+ Script + " --python-use-system-env  -E 'CYCLES' 1> nul -- -tmp " + tmp + " -nImg {}".format(N) + " -track " + Track
         os.system(call) 
     
-        shipImg = cv2.imread(outputFolder + 'tmp/{:06d}.png'.format(1))
+        shipImg = cv2.imread(tmp + '{:06d}.png'.format(1))
         cv2.imwrite(bimg +'{:06d}'.format(N) + ext ,shipImg) 
     except:
         print("Error")
@@ -175,12 +175,14 @@ def timeProp(N, T, disp = True):
 
 config = ConfigParser(interpolation=ExtendedInterpolation())
 config.read(Dir+"config/config.ini")
-outputF = config.get('Dir', 'OUT_DIR')
-Test_no = config.getint('Test', 'TEST_NO')
-outputFolder = outputF +"Test_{}/".format(Test_no)
-out_bimg = outputFolder+"bimg/"
-out_annot = outputFolder+"Annotations/"
-tmp = outputFolder+'tmp/'
+# outputF = config.get('Dir', 'OUT_DIR')
+# Test_no = config.getint('Test', 'TEST_NO')
+# outputFolder = outputF +"Test_{}/".format(Test_no)
+TEST_L = config.get('Auto_Dir', 'TEST_L')
+TEST = config.get('Auto_Dir', 'TEST')
+out_bimg = TEST_L+"imgs_blender/"
+out_annot = TEST_L+"blender_annot/"
+tmp = TEST_L+'tmp/'
 
 parser = argparse.ArgumentParser(description="Synthetic image generation")
 parser.add_argument('-N', type=int, default=1,
@@ -201,8 +203,8 @@ try:
     os.mkdir(tmp)
     Hw_all = np.zeros((img_total, 12))
     np.savetxt(out_annot + "Hw_b.txt",Hw_all)
-    #np.savetxt(out_annot + "Hc_b.txt",Hw_all)
+    np.savetxt(out_annot + "Hc_b.txt",Hw_all)
 except:
     pass
 
-T = renderRandomScenes(N,img_total, Dir, out_annot, out_bimg, tmp, out_annot)
+T = renderRandomScenes(N,Dir, out_bimg, tmp, TEST)

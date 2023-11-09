@@ -60,7 +60,7 @@ def main(scene):
     #TRACKER = True
     
     if TRACKER:
-        Hw_track = np.loadtxt(tracker + "Hw_gt.txt")
+        Hw_track = np.loadtxt(tracker + "Hw.txt")
     
     shift_occlusions()
     rotate_sun()
