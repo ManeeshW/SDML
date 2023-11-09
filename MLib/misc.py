@@ -24,19 +24,19 @@ def requiredkeys():
 def Warning(pc_tracked, Tk, Nk, keyCount, msg):
     if pc_tracked.shape == (0,):
        if keyCount < Tk:
-          msg = "   Please select {} points".format(Tk - keyCount)
+          msg = GOOD + " Please select {} points".format(Tk - keyCount)
        elif keyCount == Tk:
-          msg = "   Selection Complete"
+          msg = GOOD + " Selection Complete"
        else:
-          msg = "   Warning : Over Selected \n"
+          msg = WARNING + "  Over Selected "
 
     elif Nk > 0:
       if keyCount < Nk:
-        msg = " Please select {} points".format(Nk - keyCount)
+        msg = GOOD + " Please select {} points".format(Nk - keyCount)
       elif keyCount == Nk:
-        msg = " Selection Complete"
+        msg = GOOD + " Selection Complete"
       else:
-        msg = " Warning : Over Selected "
+        msg = WARNING + "  Over Selected "
         
     return msg   
 
@@ -105,7 +105,7 @@ def draw_tracked(image, No, color = (0,120,255), color2 = (0,120,185)):
             cv2.circle(image, (x+1,y-1), 0, color2, -1)
         msg = GOOD + "{} Keypoints are in Tracked History   ".format(p.shape[0])
     else:
-       msg = ERROR + "!!!!!!    There is no tracked keypoints history   !!!!!!"
+       msg = WARNING + "!!!!!!    There is no tracked keypoints history   !!!!!!"
        p = np.array([])
 
     return image, p, msg
