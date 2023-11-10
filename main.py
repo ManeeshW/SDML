@@ -23,34 +23,6 @@ from MLib.rename import *
 from MLib.misc_fucntions import *
 from MLib.status import *
 
-
-images = os.listdir(INPUT_IMG_DIR)
-No_imgs_in_folder = len(images)
-curr_img_no = 0
-
-img_No = 1
-pc_selected = np.array([])
-pc_tracked = np.array([])
-pcs_added = np.array([])
-rc = np.array([]) #undo redo
-
-catID = 1
-msg = ""
-Hws = np.zeros((No_imgs_in_folder,12))
-Hcs = np.zeros((No_imgs_in_folder,12))
-
-# Lists to store the bounding box coordinates
-top_left_corner=[]
-bottom_right_corner=[]
-top_left_corner_scale=[]
-bottom_right_corner_scale=[]
-Mouse_Move = []
-
-maxScaleUp = 100
-scaleFactor = 0
-keyCount = 0
-trackbarValue = "Scale"
-factor = 0.5
     
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
@@ -474,6 +446,35 @@ def statusbar(msg, x=0,y=0):
 # Rename and Load Data by refering to config.ini
 print("loading Data ...")
 rename(REAL_IMG_DIR,INPUT_IMG_DIR)
+
+images = os.listdir(INPUT_IMG_DIR)
+No_imgs_in_folder = len(images)
+curr_img_no = 0
+
+img_No = 1
+pc_selected = np.array([])
+pc_tracked = np.array([])
+pcs_added = np.array([])
+rc = np.array([]) #undo redo
+
+catID = 1
+msg = ""
+Hws = np.zeros((No_imgs_in_folder,12))
+Hcs = np.zeros((No_imgs_in_folder,12))
+
+# Lists to store the bounding box coordinates
+top_left_corner=[]
+bottom_right_corner=[]
+top_left_corner_scale=[]
+bottom_right_corner_scale=[]
+Mouse_Move = []
+
+maxScaleUp = 100
+scaleFactor = 0
+keyCount = 0
+trackbarValue = "Scale"
+factor = 0.5
+
 
 
 # Read Images
