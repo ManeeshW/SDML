@@ -15,4 +15,3 @@ def rename(input_path, output_path):
         except:
             pass
         n += 1
-    time.sleep(10)
