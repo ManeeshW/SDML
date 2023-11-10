@@ -1,7 +1,8 @@
 # Author: Maneesha Wickramasuriya
 # Company: Flight Dynamics and Control Lab (FDCL)
 # License: This code is free to use, modify, and distribute as long as credit and citation are given to the first author and FDCL.
-
+from plt import *
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 import os
 from PIL import Image
 import cv2
@@ -23,11 +24,13 @@ from MLib.rename import *
 from MLib.misc_fucntions import *
 from MLib.status import *
 
-    
+
+
+ 
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, PT, Tk, Nk, msg, keyCount
+  global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, PT, Tk, Nk, msg, keyCount, fig, ax
 
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
@@ -43,21 +46,40 @@ def selectKeyPoints(action, x, y, flags, *userdata):
    cv2.imshow("Window",scaledImg)
 
   elif action == cv2.EVENT_MOUSEMOVE:
-     draw_crosshair(x,y,scaledImg, int(scaleValue/5))
-     cv2.imshow("Window",scaledImg)
-     scaledImg = cv2.resize(image, None, fx=scaleFactor, fy = scaleFactor, interpolation = cv2.INTER_LINEAR)
-     #cv2.imshow("Window",scaledImg)
+    draw_crosshair(x,y,scaledImg, int(scaleValue/5))
+    
+    fig = plt.figure(figsize = (20,15))
+    ax = fig.add_subplot(111, projection = '3d')   
+    
+    x = [0, x, 0,0]
+    y = [0, y, 0,2]
+    z = [0, 2, 2,0]
+
+    scatter = ax.scatter(x,y,z,picker=True)
+    fig.canvas.mpl_connect('pick_event', lambda event: chaos_onclick(event, ax, x, y, z))
+    canvas = FigureCanvasAgg(fig)
+    canvas.draw()
+    rgba = np.asarray(canvas.buffer_rgba())
+    bga = cv2.cvtColor(rgba, cv2.COLOR_RGB2BGR)
+    #scaledImg = bga
+    plt.close(fig)
+    cv2.imshow("Window",scaledImg)
+    scaledImg = cv2.resize(image, None, fx=scaleFactor, fy = scaleFactor, interpolation = cv2.INTER_LINEAR)
+    #cv2.imshow("Window",scaledImg)
+     
   if curr_img_no != img_No:
-     curr_img_no = img_No
-     scaleValue = 0
-     scaleFactor = 1
-     cv2.setTrackbarPos('Scale', 'Window', 0)
-     cv2.imshow("Window",scaledImg)
+    curr_img_no = img_No
+    scaleValue = 0
+    scaleFactor = 1
+    cv2.setTrackbarPos('Scale', 'Window', 0)
+    cv2.imshow("Window",scaledImg)
+
+  
 
   Tk, Nk = requiredkeys() # NK - New Keypoints, TK - Total Keypoints
   keyCount = pc_selected.shape[0]
   msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-  statusbar(msg, int(x/scaleFactor),int(y/scaleFactor))
+  #statusbar(msg, int(x/scaleFactor),int(y/scaleFactor))
   #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,int(x/scaleFactor),int(y/scaleFactor),Tk,Nk, keyCount)+ msg )
 
 
@@ -173,12 +195,29 @@ def imageScroll(x):
     cv2.imshow("Window",scaledImg) 
 
 def status(*args):
-    global img_No, pc_selected, pc_tracked, PH
+    global img_No, pc_selected, pc_tracked, image, fig, ax
     print("Points pre Selected : \n", pc_selected.shape)
     #pw, pc_tracked = observeKeysDict(pc_tracked, pc)
     print("img_No : ", img_No)
     print("Points Tracked : \n", pc_tracked)
     #print("Points Tracked : \n", pw)
+    
+    fig = plt.figure(figsize = (20,15))
+    ax = fig.add_subplot(111, projection = '3d')
+    x = [0, 2, 0,0]
+    y = [0, 2, 0,2]
+    z = [0, 2, 2,0]
+    
+    scatter = ax.scatter(x,y,z,picker=True)
+    fig.canvas.mpl_connect('pick_event', lambda event: chaos_onclick(event, ax, x, y, z))
+    # canvas = FigureCanvasAgg(fig)
+    # canvas.draw()
+    # rgba = np.asarray(canvas.buffer_rgba())
+    # bga = cv2.cvtColor(rgba, cv2.COLOR_RGB2BGR)
+    plt.show()
+    #image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
+    # scaledImg= rgba.copy()
+    # cv2.imshow("Window",scaledImg) 
 
 def ShowTracked(*args):
     global img_No, image, scaledImg, pc_selected, pc_tracked, pcs_added, msg
