@@ -24,13 +24,33 @@ from MLib.rename import *
 from MLib.misc_fucntions import *
 from MLib.status import *
 
-
+def plot3d():
+    df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
+    csv = CSV(df)
+    PW = csv.Pw
+    
+    fig = plt.figure(figsize = (20,15))
+    ax = fig.add_subplot(111, projection = '3d')
+    x = PW[:,0]
+    y = PW[:,1]
+    z = PW[:,2]
+    
+    scatter = ax.scatter(x,y,z,picker=True)
+    fig.canvas.mpl_connect('pick_event', lambda event: chaos_onclick(event, ax, x, y, z))
+    # canvas = FigureCanvasAgg(fig)
+    # canvas.draw()
+    # rgba = np.asarray(canvas.buffer_rgba())
+    # bga = cv2.cvtColor(rgba, cv2.COLOR_RGB2BGR)
+    
+    plt.show()
+    #plt.pause(0.8)
+    plt.close(fig)
 
  
 # function which will be called on mouse input
 def selectKeyPoints(action, x, y, flags, *userdata):
   # Referencing global variables 
-  global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, PT, Tk, Nk, msg, keyCount, fig, ax
+  global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, Tk, Nk, msg, keyCount, fig, ax
 
   # Mark the top left corner when left mouse button is pressed
   scaleValue = cv2.getTrackbarPos('Scale', 'Window')
@@ -48,21 +68,6 @@ def selectKeyPoints(action, x, y, flags, *userdata):
   elif action == cv2.EVENT_MOUSEMOVE:
     draw_crosshair(x,y,scaledImg, int(scaleValue/5))
     
-    fig = plt.figure(figsize = (20,15))
-    ax = fig.add_subplot(111, projection = '3d')   
-    
-    x = [0, x, 0,0]
-    y = [0, y, 0,2]
-    z = [0, 2, 2,0]
-
-    scatter = ax.scatter(x,y,z,picker=True)
-    fig.canvas.mpl_connect('pick_event', lambda event: chaos_onclick(event, ax, x, y, z))
-    canvas = FigureCanvasAgg(fig)
-    canvas.draw()
-    rgba = np.asarray(canvas.buffer_rgba())
-    bga = cv2.cvtColor(rgba, cv2.COLOR_RGB2BGR)
-    #scaledImg = bga
-    plt.close(fig)
     cv2.imshow("Window",scaledImg)
     scaledImg = cv2.resize(image, None, fx=scaleFactor, fy = scaleFactor, interpolation = cv2.INTER_LINEAR)
     #cv2.imshow("Window",scaledImg)
@@ -79,9 +84,9 @@ def selectKeyPoints(action, x, y, flags, *userdata):
   Tk, Nk = requiredkeys() # NK - New Keypoints, TK - Total Keypoints
   keyCount = pc_selected.shape[0]
   msg = Warning(pc_tracked, Tk, Nk, keyCount, msg)
-  #statusbar(msg, int(x/scaleFactor),int(y/scaleFactor))
+  statusbar(msg, int(x/scaleFactor),int(y/scaleFactor))
   #cv2.displayStatusBar("Window", "Img No. {:03d} [{:03d},{:03d}] | Keys [Tot. : {:02d} | New : {:02d} | Picked : {:02d}]".format(img_No,int(x/scaleFactor),int(y/scaleFactor),Tk,Nk, keyCount)+ msg )
-
+  
 
 # Create the function for the trackbar since its mandatory but we wont be using it so pass.
 def scaleIt(x):
@@ -201,12 +206,15 @@ def status(*args):
     print("img_No : ", img_No)
     print("Points Tracked : \n", pc_tracked)
     #print("Points Tracked : \n", pw)
+    df = pd.read_excel('pw.xlsx',header=0, sheet_name='All')
+    csv = CSV(df)
+    PW = csv.Pw
     
     fig = plt.figure(figsize = (20,15))
     ax = fig.add_subplot(111, projection = '3d')
-    x = [0, 2, 0,0]
-    y = [0, 2, 0,2]
-    z = [0, 2, 2,0]
+    x = PW[:,0]
+    y = PW[:,1]
+    z = PW[:,2]
     
     scatter = ax.scatter(x,y,z,picker=True)
     fig.canvas.mpl_connect('pick_event', lambda event: chaos_onclick(event, ax, x, y, z))
@@ -214,7 +222,10 @@ def status(*args):
     # canvas.draw()
     # rgba = np.asarray(canvas.buffer_rgba())
     # bga = cv2.cvtColor(rgba, cv2.COLOR_RGB2BGR)
-    plt.show()
+    
+    # plt.show()
+    # plt.pause(0.3)
+    # plt.close(fig)
     #image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
     # scaledImg= rgba.copy()
     # cv2.imshow("Window",scaledImg) 
@@ -481,99 +492,92 @@ def statusbar(msg, x=0,y=0):
     status_2 = "| Keys [Tot. : {:02d} | New : {:02d} | Selected : {:02d}]".format(Tk, Nk, keyCount)
     cv2.displayStatusBar("Window", status_1 + status_2 + msg) 
 
+# def click(j=1): 
+#    print("Push")
+
+
+# def Tick(*args): plot3d()
+
+# def plotme(*args):
+#     print("push")
 
 # Rename and Load Data by refering to config.ini
 print("loading Data ...")
 rename(REAL_IMG_DIR,INPUT_IMG_DIR)
 
-images = os.listdir(INPUT_IMG_DIR)
-No_imgs_in_folder = len(images)
-curr_img_no = 0
+def runall():
+    global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, Tk, Nk, msg, keyCount, fig, ax, catID, factor, Hws, Hcs, No_imgs_in_folder
 
-img_No = 1
-pc_selected = np.array([])
-pc_tracked = np.array([])
-pcs_added = np.array([])
-rc = np.array([]) #undo redo
+    images = os.listdir(INPUT_IMG_DIR)
+    No_imgs_in_folder = len(images)
+    curr_img_no = 0
 
-catID = 1
-msg = ""
-Hws = np.zeros((No_imgs_in_folder,12))
-Hcs = np.zeros((No_imgs_in_folder,12))
+    img_No = 1
+    pc_selected = np.array([])
+    pc_tracked = np.array([])
+    pcs_added = np.array([])
+    rc = np.array([]) #undo redo
 
-# Lists to store the bounding box coordinates
-top_left_corner=[]
-bottom_right_corner=[]
-top_left_corner_scale=[]
-bottom_right_corner_scale=[]
-Mouse_Move = []
+    catID = 1
+    msg = ""
+    Hws = np.zeros((No_imgs_in_folder,12))
+    Hcs = np.zeros((No_imgs_in_folder,12))
 
-maxScaleUp = 100
-scaleFactor = 0
-keyCount = 0
-trackbarValue = "Scale"
-factor = 0.5
+    # maxScaleUp = 100
+    # scaleFactor = 0
+    keyCount = 0
+    #trackbarValue = "Scale"
+    factor = 0.5
 
+    # Read Images
+    image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
+    scaledImg= image.copy()
 
+    # Create a named window
+    cv2.namedWindow("Window", flags=cv2.WINDOW_GUI_EXPANDED)
+    #cv2.namedWindow("Label")
+    # highgui function called when mouse events occur
+    cv2.setMouseCallback("Window", selectKeyPoints)
+    # Create trackbar and associate a callback function / Attach mouse call back to a window and a method
+    #cv2.setMouseCallback('Window', draw_circle)
+    # cv2.createButton("Window",back)
 
-# Read Images
-image = cv2.imread(INPUT_IMG_DIR+ "{:06}.jpg".format(img_No))
-scaledImg= image.copy()
-# Make a temporary image, will be useful to clear the drawing
-temp = image.copy()
-# Create a named window
-cv2.namedWindow("Window", flags=cv2.WINDOW_GUI_EXPANDED)
-#cv2.namedWindow("Label")
-# highgui function called when mouse events occur
-cv2.setMouseCallback("Window", selectKeyPoints)
-# Create trackbar and associate a callback function / Attach mouse call back to a window and a method
-#cv2.setMouseCallback('Window', draw_circle)
-# cv2.createButton("Window",back)
+    cv2.createButton("<-Back",Back,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Status",status,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Reset",Reset,None,cv2.QT_PUSH_BUTTON,1)
 
-cv2.createButton("<-Back",Back,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Prev-Selected-keys",retrieveSaved,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Undo",Undo,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Prev-Label",ShowPrev,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton(">> Label-Img <<",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
 
-cv2.createButton("Status",status,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Reset",Reset,None,cv2.QT_PUSH_BUTTON,1)
+    #cv2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
+    cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
 
-cv2.createButton("Prev-Selected-keys",retrieveSaved,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Undo",Undo,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Redo",Redo,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("ShowTracked",ShowTracked,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Prev-Label",ShowPrev,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Track",Track,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton(">> Label-Img <<",OpenImgLabel,None,cv2.QT_PUSH_BUTTON,1)
+    # Create trackbar and associate a callback function / create trackbars Named Radius with the range of 150 and starting position of 5.
+    cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
+    cv2.createTrackbar('Img No', 'Window', 1, No_imgs_in_folder, imageScroll) 
+    cv2.createTrackbar('Blend', 'Window', 50, 100, blenderOut) 
 
-#v2.createButton("Save",Save,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Blend",blenderOut,None,cv2.QT_PUSH_BUTTON,1)
-cv2.createButton("Next->",Next,None,cv2.QT_PUSH_BUTTON,1)
+    # Create trackbar and associate a callback function
+    #cv2.createTrackbar(trackbarValue, windowName, scaleFactor, maxScaleUp, scaleImage)
+    #cv2.createButton("Window 1",Tick,None,cv2.QT_CHECKBOX,1)
 
-# Create trackbar and associate a callback function / create trackbars Named Radius with the range of 150 and starting position of 5.
-cv2.createTrackbar('Scale', 'Window', 0, 200, scaleIt) 
-cv2.createTrackbar('Img No', 'Window', 1, No_imgs_in_folder, imageScroll) 
-cv2.createTrackbar('Blend', 'Window', 50, 100, blenderOut) 
-
-# Create trackbar and associate a callback function
-#cv2.createTrackbar(trackbarValue, windowName, scaleFactor, maxScaleUp, scaleImage)
-
-k=0
-# Close the window when key q is pressed
-while k!=113:
-  
-  # Display the image
-  scaledImg = scaleImage()
-#  cv2.imshow(windowName, scaledImage) 
-  cv2.imshow("Window",scaledImg)
-  k = cv2.waitKey(0)
-  # If c is pressed, clear the window, using the dummy image
-
-  
-  if (k == 99):
-    print('reset')
-    cv2.setTrackbarPos('Scale', 'Window', 0)
-    image= temp.copy()
-    cv2.imshow("Window", image)
-    
-c = cv2.waitKey(0)
-cv2.destroyAllWindows() 
+    k=0
+    # Close the window when key q is pressed
+    while k!=113:
+        # Display the image
+        scaledImg = scaleImage()
+        #  cv2.imshow(windowName, scaledImage) 
+        cv2.imshow("Window",scaledImg)
+        k = cv2.waitKey(0)
+        
+    # c = cv2.waitKey(0)
+    cv2.destroyAllWindows() 
 
 
+runall()
