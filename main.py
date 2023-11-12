@@ -506,7 +506,7 @@ print("loading Data ...")
 rename(REAL_IMG_DIR,INPUT_IMG_DIR)
 
 def runall():
-    global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, Tk, Nk, msg, keyCount, fig, ax, catID, factor, Hws, Hcs, No_imgs_in_folder
+    global  scaledImg, image, pc_selected, pc_tracked, pcs_added, curr_img_no, rc, Tk, Nk, msg, keyCount, fig, ax, catID, factor, Hws, Hcs, No_imgs_in_folder
 
     images = os.listdir(INPUT_IMG_DIR)
     No_imgs_in_folder = len(images)
